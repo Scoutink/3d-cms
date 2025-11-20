@@ -290,6 +290,31 @@ class MaterialPlugin extends Plugin {
                 diffuseColor: { r: 0.2, g: 0.2, b: 0.8 },
                 emissiveColor: { r: 0.5, g: 0.5, b: 1.0 },
                 specularPower: 32
+            },
+
+            // [MAT.4] Gemstone presets
+            ruby: {
+                type: 'pbr',
+                albedoColor: { r: 0.9, g: 0.1, b: 0.1 },
+                metallic: 0.3,
+                roughness: 0.1,
+                alpha: 0.85
+            },
+
+            emerald: {
+                type: 'pbr',
+                albedoColor: { r: 0.1, g: 0.8, b: 0.3 },
+                metallic: 0.3,
+                roughness: 0.1,
+                alpha: 0.85
+            },
+
+            sapphire: {
+                type: 'pbr',
+                albedoColor: { r: 0.1, g: 0.3, b: 0.9 },
+                metallic: 0.3,
+                roughness: 0.1,
+                alpha: 0.85
             }
         };
     }

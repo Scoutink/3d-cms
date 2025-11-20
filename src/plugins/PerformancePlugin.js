@@ -172,7 +172,16 @@ class PerformancePlugin extends Plugin {
         // [PRF.1.2] Rendering stats
         this.metrics.drawCalls = this.scene.getActiveMeshes().length;
         this.metrics.totalVertices = this.scene.getTotalVertices();
-        this.metrics.totalFaces = this.scene.getTotalIndices() / 3;
+
+        // Calculate total indices manually (no built-in method)
+        let totalIndices = 0;
+        this.scene.meshes.forEach(mesh => {
+            if (mesh.getTotalIndices) {
+                totalIndices += mesh.getTotalIndices();
+            }
+        });
+        this.metrics.totalFaces = Math.floor(totalIndices / 3);
+
         this.metrics.textureCount = this.scene.textures.length;
         this.metrics.meshCount = this.scene.meshes.length;
 
