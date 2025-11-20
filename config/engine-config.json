@@ -47,7 +47,9 @@
       "threshold": 0.5,
       "showMarkers": true,
       "markerDuration": 1000,
-      "doubleClickWindow": 400
+      "doubleClickWindow": 400,
+      "rotateCameraToDirection": true,
+      "rotationSpeed": 0.1
     }
   },
   "lighting": {

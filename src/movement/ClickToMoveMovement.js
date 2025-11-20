@@ -52,6 +52,11 @@ class ClickToMoveMovement {
         this.showMarkers = config.showMarkers !== false;
         this.markerDuration = config.markerDuration || 1000; // ms
 
+        // [MOV.5.4] Camera rotation settings
+        // USER REQUIREMENT: Camera should face direction of movement
+        this.rotateCameraToDirection = config.rotateCameraToDirection !== false;
+        this.rotationSpeed = config.rotationSpeed || 0.1;
+
         // [MOV.5] State
         this.enabled = false;
         this.camera = null;
@@ -166,6 +171,27 @@ class ClickToMoveMovement {
             });
 
             return BABYLON.Vector3.Zero();
+        }
+
+        // [MOV.5.4] Rotate camera to face direction of movement
+        // USER REQUIREMENT: Camera direction aligns with movement direction
+        if (this.rotateCameraToDirection && this.camera.rotation) {
+            // Calculate target rotation (yaw) from direction
+            const targetRotationY = Math.atan2(direction.x, direction.z);
+
+            // Smoothly interpolate camera rotation
+            // This creates smooth rotation instead of instant snap
+            const currentRotationY = this.camera.rotation.y;
+
+            // Calculate shortest rotation path (handles 360° wrapping)
+            let rotationDiff = targetRotationY - currentRotationY;
+
+            // Normalize to [-PI, PI] range
+            while (rotationDiff > Math.PI) rotationDiff -= 2 * Math.PI;
+            while (rotationDiff < -Math.PI) rotationDiff += 2 * Math.PI;
+
+            // Apply smooth rotation
+            this.camera.rotation.y += rotationDiff * this.rotationSpeed;
         }
 
         // [MOV.5.3] Normalize and apply speed
