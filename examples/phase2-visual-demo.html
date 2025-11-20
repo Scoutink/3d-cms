@@ -277,11 +277,55 @@
             padding: 8px;
             font-size: 11px;
         }
+
+        /* [UI.MODE] Edit/View Mode Toggle */
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-toggle button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: scale(1.05);
+        }
+
+        /* [UI.MODE] View mode - hide edit controls */
+        body.view-mode .control-panel,
+        body.view-mode .info-panel,
+        body.view-mode .instructions {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <!-- Canvas -->
     <canvas id="renderCanvas"></canvas>
+
+    <!-- [UI.MODE] Mode Toggle -->
+    <div class="mode-toggle">
+        <button id="modeToggleBtn" onclick="toggleMode()">
+            📝 Switch to View Mode
+        </button>
+    </div>
 
     <!-- Instructions -->
     <div class="instructions" id="instructions">
@@ -360,6 +404,15 @@
                 </div>
                 <input type="range" id="rotZSlider" min="-180" max="180" value="0"
                        oninput="updateGroundRotation()">
+            </div>
+
+            <!-- [GRD.3.2] Rotate Full Scene Option -->
+            <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="rotateFullScene" checked onchange="toggleRotateFullScene()"
+                           style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+                    <span>🔄 Rotate Full Scene (objects follow ground)</span>
+                </label>
             </div>
         </div>
 
@@ -474,6 +527,11 @@
         import BabylonEngine from '../src/core/BabylonEngine.js';
         import ConfigLoader from '../src/config/ConfigLoader.js';
 
+        // [PLG.1] Import Phase 1 plugins (Movement)
+        import MovementPlugin from '../src/plugins/MovementPlugin.js';
+        import KeyboardMovement from '../src/movement/KeyboardMovement.js';
+        import ClickToMoveMovement from '../src/movement/ClickToMoveMovement.js';
+
         // [PLG.1] Import Phase 2 plugins
         import GroundPlugin from '../src/plugins/GroundPlugin.js';
         import LightingPlugin from '../src/plugins/LightingPlugin.js';
@@ -500,6 +558,10 @@
             // [ENG.1.2] Create engine
             const canvas = document.getElementById('renderCanvas');
             window.engine = new BabylonEngine(canvas, config);
+
+            // [PLG.2] Register Phase 1 plugins (Movement)
+            console.log('[DEMO] Registering Movement plugin...');
+            window.engine.registerPlugin('movement', new MovementPlugin());
 
             // [PLG.2] Register Phase 2 plugins
             console.log('[DEMO] Registering Phase 2 plugins...');
@@ -543,6 +605,9 @@
             });
 
             const ground = groundPlugin.getGround();
+
+            // [COL] Enable ground collision
+            ground.checkCollisions = true;
 
             // [GRD.5] Ground color
             groundPlugin.setColor('#5a7c4a');
@@ -616,11 +681,15 @@
             camera.speed = 0.5;
             camera.angularSensibility = 3000;
 
-            // WASD + Arrow keys
-            camera.keysUp = [87, 38];    // W, Up
-            camera.keysDown = [83, 40];  // S, Down
-            camera.keysLeft = [65, 37];  // A, Left
-            camera.keysRight = [68, 39]; // D, Right
+            // [COL] Enable camera collision to prevent falling off edges
+            camera.checkCollisions = true;
+            camera.applyGravity = true;
+            camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1); // Collision shape
+
+            // [MOV] Movement now handled by MovementPlugin
+            // Keyboard: WASD/Arrow keys for movement
+            // Click-to-Move: Click on ground to move camera there
+            // Movement modes registered automatically by plugin
 
             console.log('[DEMO.1] Scene setup complete!');
         }
@@ -738,6 +807,13 @@
             console.log(`[UI] Edge behavior: ${behavior}`);
         };
 
+        window.toggleRotateFullScene = function() {
+            const groundPlugin = window.engine.getPlugin('ground');
+            const checkbox = document.getElementById('rotateFullScene');
+            groundPlugin.setRotateFullScene(checkbox.checked);
+            console.log(`[UI] Rotate full scene: ${checkbox.checked}`);
+        };
+
         window.setLightingPreset = function(preset) {
             const lightingPlugin = window.engine.getPlugin('lighting');
             const shadowPlugin = window.engine.getPlugin('shadow');
@@ -806,6 +882,42 @@
                 console.log('[UI] Shadows enabled');
             }
         };
+
+        // [UI.MODE] Edit/View Mode Toggle
+        // USER REQUIREMENT: Toggle between editing and clean viewing
+        let currentMode = 'edit'; // Default to view mode as per requirement
+        window.toggleMode = function() {
+            const body = document.body;
+            const btn = document.getElementById('modeToggleBtn');
+
+            if (currentMode === 'edit') {
+                // Switch to view mode
+                body.classList.add('view-mode');
+                btn.textContent = '📝 Switch to Edit Mode';
+                currentMode = 'view';
+                console.log('[UI] Switched to View Mode - Clean experience');
+            } else {
+                // Switch to edit mode
+                body.classList.remove('view-mode');
+                btn.textContent = '👁️ Switch to View Mode';
+                currentMode = 'edit';
+                console.log('[UI] Switched to Edit Mode - All controls visible');
+            }
+
+            // Save preference to localStorage
+            localStorage.setItem('3dcms_mode', currentMode);
+        };
+
+        // [UI.MODE] Load saved mode preference on startup
+        window.addEventListener('load', () => {
+            const savedMode = localStorage.getItem('3dcms_mode') || 'view'; // Default view mode
+            if (savedMode === 'view') {
+                // Start in view mode
+                setTimeout(() => {
+                    window.toggleMode();
+                }, 100);
+            }
+        });
 
         window.applyMaterial = function(presetName) {
             if (!window.selectedObject) {

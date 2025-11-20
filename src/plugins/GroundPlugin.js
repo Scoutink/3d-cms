@@ -54,6 +54,7 @@ class GroundPlugin extends Plugin {
         // [GRD.3] Rotation configuration
         // USER REQUIREMENT: For 3D websites (vertical/tilted layouts)
         this.rotation = { x: 0, y: 0, z: 0 };
+        this.rotateFullScene = true; // USER REQUIREMENT: Rotate all objects with ground
         this.rotationPresets = {
             horizontal: { x: 0, y: 0, z: 0 },              // Default
             vertical: { x: Math.PI / 2, y: 0, z: 0 },      // Wall-like
@@ -65,9 +66,13 @@ class GroundPlugin extends Plugin {
         this.edgeBehavior = 'stop';  // 'stop', 'teleport', 'wrap', 'custom'
         this.edgeCallback = null;
         this.teleportPosition = { x: 0, y: 2, z: 0 };
+        this.edgeDetectionObserver = null;
+        this.boundaryWalls = null; // Invisible walls for 'stop' behavior
 
         // [GRD.5] Material configuration
         this.material = null;
+        this.textureMode = 'tiled'; // 'tiled', 'stretched', 'centered'
+        this.textureOptions = {};
 
         // [GRD] Type
         this.groundType = 'plane';
@@ -123,6 +128,11 @@ class GroundPlugin extends Plugin {
         // [GRD.4] Start edge detection if needed
         if (this.sizeMode === 'fixed' && this.edgeBehavior !== 'none') {
             this.startEdgeDetection();
+
+            // [GRD.4.5] Create invisible boundary walls for 'stop' behavior
+            if (this.edgeBehavior === 'stop') {
+                this.createBoundaryWalls();
+            }
         }
 
         // [EVT.2] Emit ground ready event
@@ -270,25 +280,73 @@ class GroundPlugin extends Plugin {
 
     // [GRD.3] Set ground rotation
     // USER REQUIREMENT: For 3D website layouts (vertical/tilted grounds)
-    setRotation(x, y, z) {
+    setRotation(x, y, z, rotateFullScene = this.rotateFullScene) {
         if (!this.ground) {
             console.warn('[GRD.3] No ground to rotate');
             return;
         }
 
+        const oldRotation = { ...this.rotation };
         this.rotation = { x, y, z };
 
         this.ground.rotation.x = x;
         this.ground.rotation.y = y;
         this.ground.rotation.z = z;
 
+        // [GRD.3.1] Rotate full scene if enabled
+        // USER REQUIREMENT: All objects maintain relative position to ground
+        if (rotateFullScene) {
+            this.rotateSceneObjects(oldRotation, this.rotation);
+        }
+
         // [EVT.2] Emit rotation changed event
         this.events.emit('ground:rotation:changed', {
             rotation: this.rotation,
-            ground: this.ground
+            ground: this.ground,
+            fullScene: rotateFullScene
         });
 
-        console.log(`[GRD.3] Ground rotation set: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
+        console.log(`[GRD.3] Ground rotation set: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}) ${rotateFullScene ? '(full scene)' : ''}`);
+    }
+
+    // [GRD.3.1] Rotate all scene objects to maintain relative position to ground
+    // USER REQUIREMENT: When ground rotates, objects follow
+    rotateSceneObjects(oldRotation, newRotation) {
+        if (!this.scene) return;
+
+        // Calculate rotation delta
+        const deltaX = newRotation.x - oldRotation.x;
+        const deltaY = newRotation.y - oldRotation.y;
+        const deltaZ = newRotation.z - oldRotation.z;
+
+        // Get all meshes except ground, camera, and boundary walls
+        const objectsToRotate = this.scene.meshes.filter(mesh => {
+            if (!mesh) return false;
+            if (mesh === this.ground) return false;
+            if (mesh.name === 'camera') return false;
+            if (mesh.name.startsWith('boundaryWall_')) return false;
+            if (mesh.metadata?.excludeFromGroundRotation) return false;
+            return true;
+        });
+
+        objectsToRotate.forEach(mesh => {
+            // Store original position relative to ground
+            const relativePos = mesh.position.clone();
+
+            // Create rotation transformation around ground center
+            const rotationMatrix = BABYLON.Matrix.RotationYawPitchRoll(deltaY, deltaX, deltaZ);
+
+            // Apply rotation to position (rotate around origin)
+            const newPos = BABYLON.Vector3.TransformCoordinates(relativePos, rotationMatrix);
+            mesh.position = newPos;
+
+            // Rotate the object itself to maintain orientation relative to ground
+            mesh.rotation.x += deltaX;
+            mesh.rotation.y += deltaY;
+            mesh.rotation.z += deltaZ;
+        });
+
+        console.log(`[GRD.3.1] Rotated ${objectsToRotate.length} scene objects with ground`);
     }
 
     // [GRD.3] Use rotation preset
@@ -309,6 +367,23 @@ class GroundPlugin extends Plugin {
     // [GRD.3] Get current rotation
     getRotation() {
         return { ...this.rotation };
+    }
+
+    // [GRD.3.2] Set rotate full scene option
+    // USER REQUIREMENT: Toggle whether ground rotation affects all objects
+    setRotateFullScene(enabled) {
+        this.rotateFullScene = enabled;
+        console.log(`[GRD.3.2] Rotate full scene: ${enabled ? 'enabled' : 'disabled'}`);
+
+        // [EVT.2] Emit setting changed event
+        this.events.emit('ground:rotate_full_scene:changed', {
+            enabled
+        });
+    }
+
+    // [GRD.3.2] Get rotate full scene setting
+    getRotateFullScene() {
+        return this.rotateFullScene;
     }
 
     // [GRD.2] Set size mode
@@ -377,9 +452,20 @@ class GroundPlugin extends Plugin {
             this.edgeCallback = options.callback;
         }
 
+        // Dispose existing boundary walls if switching away from 'stop'
+        if (behavior !== 'stop' && this.boundaryWalls) {
+            this.boundaryWalls.forEach(wall => wall.dispose());
+            this.boundaryWalls = null;
+        }
+
         // Start/stop edge detection
         if (behavior !== 'none' && this.sizeMode === 'fixed') {
             this.startEdgeDetection();
+
+            // Create boundary walls for 'stop' behavior
+            if (behavior === 'stop') {
+                this.createBoundaryWalls();
+            }
         } else {
             this.stopEdgeDetection();
         }
@@ -531,6 +617,54 @@ class GroundPlugin extends Plugin {
         });
     }
 
+    // [GRD.4.5] Create invisible boundary walls
+    // Prevents camera from falling off ground edges
+    createBoundaryWalls() {
+        if (this.boundaryWalls) {
+            // Already created, dispose old walls
+            this.boundaryWalls.forEach(wall => wall.dispose());
+        }
+
+        this.boundaryWalls = [];
+
+        const halfWidth = this.width / 2;
+        const halfHeight = this.height / 2;
+        const wallHeight = 20; // Tall enough to block camera
+        const wallThickness = 0.1; // Very thin
+
+        // Create 4 walls (north, south, east, west)
+        const wallConfigs = [
+            { name: 'north', width: this.width, height: wallHeight, depth: wallThickness, x: 0, y: wallHeight/2, z: halfHeight },
+            { name: 'south', width: this.width, height: wallHeight, depth: wallThickness, x: 0, y: wallHeight/2, z: -halfHeight },
+            { name: 'east', width: wallThickness, height: wallHeight, depth: this.height, x: halfWidth, y: wallHeight/2, z: 0 },
+            { name: 'west', width: wallThickness, height: wallHeight, depth: this.height, x: -halfWidth, y: wallHeight/2, z: 0 }
+        ];
+
+        wallConfigs.forEach(config => {
+            const wall = BABYLON.MeshBuilder.CreateBox(
+                `boundaryWall_${config.name}`,
+                {
+                    width: config.width,
+                    height: config.height,
+                    depth: config.depth
+                },
+                this.scene
+            );
+
+            wall.position.x = config.x;
+            wall.position.y = config.y;
+            wall.position.z = config.z;
+
+            // Make wall invisible but still collidable
+            wall.isVisible = false;
+            wall.checkCollisions = true;
+
+            this.boundaryWalls.push(wall);
+        });
+
+        console.log('[GRD.4.5] Boundary walls created (invisible)');
+    }
+
     // [GRD.5] Apply default material
     applyDefaultMaterial(mesh) {
         const material = new BABYLON.StandardMaterial('defaultGroundMaterial', this.scene);
@@ -575,20 +709,71 @@ class GroundPlugin extends Plugin {
         console.log('[GRD.5] Ground color updated');
     }
 
-    // [GRD.5] Set ground texture
-    setTexture(url, tiling = { u: 1, v: 1 }) {
+    // [GRD.5] Set ground texture with mode
+    // USER REQUIREMENT: Tiled (default), stretched, or centered texture modes
+    // @param {string} url - Texture URL
+    // @param {string} mode - 'tiled', 'stretched', or 'centered'
+    // @param {object} options - Mode-specific options (e.g., tiling for 'tiled' mode)
+    setTexture(url, mode = 'tiled', options = {}) {
         if (!this.ground || !this.ground.material) {
             console.warn('[GRD.5] No ground or material to set texture');
             return;
         }
 
         const material = this.ground.material;
+        const texture = new BABYLON.Texture(url, this.scene);
 
-        material.diffuseTexture = new BABYLON.Texture(url, this.scene);
-        material.diffuseTexture.uScale = tiling.u;
-        material.diffuseTexture.vScale = tiling.v;
+        switch (mode) {
+            case 'tiled':
+                // [GRD.5.1] Tiled mode - repeat texture
+                const tilingU = options.u || options.tiling?.u || 1;
+                const tilingV = options.v || options.tiling?.v || 1;
+                texture.uScale = tilingU;
+                texture.vScale = tilingV;
+                texture.wrapU = BABYLON.Texture.WRAP_ADDRESSMODE;
+                texture.wrapV = BABYLON.Texture.WRAP_ADDRESSMODE;
+                break;
 
-        console.log('[GRD.5] Ground texture applied');
+            case 'stretched':
+                // [GRD.5.2] Stretched mode - fit texture to ground size once
+                texture.uScale = 1;
+                texture.vScale = 1;
+                texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+                texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
+                break;
+
+            case 'centered':
+                // [GRD.5.3] Centered mode - show texture at original size in center
+                // Calculate scale based on ground size vs texture size
+                const groundSize = Math.max(this.width, this.height);
+                const centerScale = options.scale || 1; // Allow manual scaling
+                texture.uScale = centerScale;
+                texture.vScale = centerScale;
+                texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+                texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
+                // Center the texture using uOffset/vOffset
+                texture.uOffset = (1 - texture.uScale) / 2;
+                texture.vOffset = (1 - texture.vScale) / 2;
+                break;
+
+            default:
+                console.warn(`[GRD.5] Unknown texture mode: ${mode}, using tiled`);
+                texture.uScale = 1;
+                texture.vScale = 1;
+        }
+
+        material.diffuseTexture = texture;
+        this.textureMode = mode;
+        this.textureOptions = options;
+
+        console.log(`[GRD.5] Ground texture applied: ${mode} mode`);
+
+        // [EVT.2] Emit texture changed event
+        this.events.emit('ground:texture:changed', {
+            url,
+            mode,
+            options
+        });
     }
 
     // [GRD.6] Enable collision
@@ -631,6 +816,12 @@ class GroundPlugin extends Plugin {
     dispose() {
         // Stop edge detection
         this.stopEdgeDetection();
+
+        // Dispose boundary walls
+        if (this.boundaryWalls) {
+            this.boundaryWalls.forEach(wall => wall.dispose());
+            this.boundaryWalls = null;
+        }
 
         // Dispose ground
         if (this.ground) {
