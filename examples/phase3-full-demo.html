@@ -271,6 +271,9 @@
         import UIPlugin from '../src/plugins/UIPlugin.js';
         import PerformancePlugin from '../src/plugins/PerformancePlugin.js';
 
+        // [MOV] Import movement for click-to-move
+        import ClickToMoveMovement from '../src/movement/ClickToMoveMovement.js';
+
         // [DEMO] Global references
         window.engine = null;
         window.scene = null;
@@ -428,6 +431,25 @@
             camera.checkCollisions = true;
             camera.applyGravity = true;
             camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1);
+
+            // [MOV] Setup click-to-move
+            // MovementPlugin only supports one active mode at a time (keyboard by default)
+            // So we manually setup click-to-move for ground clicking
+            const clickToMove = new ClickToMoveMovement();
+            clickToMove.activate(camera, scene);
+            console.log('[MOV] Click-to-move activated');
+
+            // [MOV] Manual update loop for click-to-move
+            // This allows both keyboard and click-to-move to work simultaneously
+            scene.onBeforeRenderObservable.add(() => {
+                if (clickToMove.enabled && clickToMove.target) {
+                    const velocity = clickToMove.getVelocity();
+                    if (velocity.length() > 0) {
+                        camera.position.addInPlace(velocity);
+                    }
+                }
+            });
+            console.log('[MOV] Click-to-move update loop registered');
 
             // [DEMO] Create demo objects
             await createDemoObjects();
