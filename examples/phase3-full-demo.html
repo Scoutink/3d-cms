@@ -410,9 +410,9 @@
 
             // [INP.1] Camera rotation (mouse look)
             inputManager.on('action:lookAround', (action) => {
-                // action.value contains delta movement from MouseSource
-                if (action.value && action.value.delta) {
-                    const delta = action.value.delta;
+                // action.delta contains movement delta from MouseSource
+                if (action.delta) {
+                    const delta = action.delta;
                     camera.rotation.y += delta.x * lookSpeed;
                     camera.rotation.x += delta.y * lookSpeed;
 
@@ -426,9 +426,9 @@
             let walkSpeed = 0.15;
 
             inputManager.on('action:walkTo', (action) => {
-                // action.value contains hitInfo from MouseSource
-                if (action.value && action.value.hitInfo && action.value.hitInfo.hit) {
-                    walkTarget = action.value.hitInfo.pickedPoint.clone();
+                // action.hitInfo contains raycast results from MouseSource
+                if (action.hitInfo && action.hitInfo.hit) {
+                    walkTarget = action.hitInfo.pickedPoint.clone();
                     walkTarget.y = camera.position.y; // Keep same height
                     console.log('[INP.1] Walking to:', walkTarget);
                 }
