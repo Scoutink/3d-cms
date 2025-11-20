@@ -1,0 +1,15 @@
+#!/bin/bash
+echo "======================================"
+echo "Starting 3D CMS Demo Server"
+echo "======================================"
+echo ""
+echo "Server starting on http://localhost:8000"
+echo ""
+echo "Open these URLs in your browser:"
+echo "  - Phase 1 Demo: http://localhost:8000/examples/phase1-foundation-demo.html"
+echo "  - Phase 2 Demo: http://localhost:8000/examples/phase2-visual-demo.html"
+echo ""
+echo "Press Ctrl+C to stop the server"
+echo "======================================"
+echo ""
+python3 -m http.server 8000
