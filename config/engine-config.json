@@ -1,0 +1,66 @@
+{
+  "engineOptions": {
+    "antialias": true,
+    "preserveDrawingBuffer": true,
+    "stencil": true
+  },
+  "camera": {
+    "defaultType": "universal",
+    "position": {
+      "x": 0,
+      "y": 2,
+      "z": -10
+    },
+    "speed": 0.5,
+    "sensitivity": 3000,
+    "collision": true,
+    "gravity": true,
+    "ellipsoid": {
+      "x": 1,
+      "y": 1.5,
+      "z": 1
+    }
+  },
+  "gravity": {
+    "preset": "earth"
+  },
+  "collision": {
+    "mode": "hybrid"
+  },
+  "physics": {
+    "enabled": true,
+    "engine": "havok",
+    "gravity": {
+      "x": 0,
+      "y": -9.81,
+      "z": 0
+    }
+  },
+  "movement": {
+    "defaultMode": "keyboard",
+    "acceleration": 0.1,
+    "keyboard": {
+      "speed": 0.5
+    }
+  },
+  "lighting": {
+    "preset": "day"
+  },
+  "shadows": {
+    "enabled": true,
+    "quality": "medium"
+  },
+  "ground": {
+    "enabled": true,
+    "type": "plane",
+    "size": 100,
+    "subdivisions": 32,
+    "material": {
+      "diffuse": "dirt.jpg",
+      "tiling": {
+        "u": 40,
+        "v": 40
+      }
+    }
+  }
+}

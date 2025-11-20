@@ -1,0 +1,297 @@
+/**
+ * @file BabylonEngine.js
+ * @description Core engine orchestrator - manages plugins, scene, render loop
+ *
+ * @tags [ENG.*] All engine tags
+ * @primary-tags [!ENG.1] Engine initialization (CRITICAL)
+ * @critical-tags [!ENG.1.3] Scene creation - all plugins depend on this
+ *
+ * @dependencies
+ *   - [ENG -> EVT] EventEmitter for plugin communication
+ *   - [ENG -> PLG] Plugin base class
+ *   - [ENG -> CFG] ConfigLoader for configuration
+ *   - Babylon.js library (external)
+ *
+ * @affects All plugins (provides scene, events, config)
+ *
+ * @events
+ *   - Emits: engine:initialized, engine:started, engine:stopped, plugin:registered
+ *   - Also emits: render:frame (every frame), window:resize
+ *
+ * @author Development Team
+ * @created 2025-10-31
+ */
+
+import EventEmitter from './EventEmitter.js';
+
+// [ENG] Core Babylon engine wrapper and plugin orchestrator
+// [!ENG.1] CRITICAL: All plugins depend on this for scene access
+class BabylonEngine {
+    // [ENG.1] Engine initialization
+    // [ENG.1.1] Canvas setup
+    // [ENG.1.2] Babylon.js engine creation
+    // [!ENG.1.3] Scene creation (all plugins need this)
+    constructor(canvas, config = {}) {
+        // [ENG.1.1] Store canvas reference
+        // [ENG.1.1 -> CAM.3.2] Camera needs canvas for attachControl
+        if (!canvas) {
+            throw new Error('[ENG.1.1] Canvas element required');
+        }
+        this.canvas = canvas;
+
+        // [ENG.1] Store configuration
+        // [CFG.1] Configuration from ConfigLoader or direct object
+        this.config = config;
+
+        // [!EVT.1] Create event emitter for plugin communication
+        // [EVT.1] All plugins use this for inter-plugin events
+        this.events = new EventEmitter();
+
+        // [ENG.2] Plugin storage
+        // Format: Map { 'pluginName' => pluginInstance }
+        this.plugins = new Map();
+
+        // [ENG.1.2] Create Babylon.js engine
+        // [ENG.1.2] Anti-aliasing enabled for better visual quality
+        const engineOptions = config.engineOptions || {
+            antialias: true,
+            preserveDrawingBuffer: true
+        };
+
+        this.engine = new BABYLON.Engine(canvas, true, engineOptions);
+
+        // [!ENG.1.3] CRITICAL: Create scene
+        // [ENG.1.3 -> PLG.1.2] All plugins receive this scene reference
+        // [ENG.1.3] Scene is foundation for all 3D objects
+        this.scene = new BABYLON.Scene(this.engine);
+
+        // [ENG.1.3] Expose scene globally for debugging and external access
+        // WARNING: Global scope pollution, but useful for development
+        if (typeof window !== 'undefined') {
+            window.__babylonScene = this.scene;
+        }
+
+        // [ENG.1] Engine state
+        this.running = false;
+        this.initialized = true;
+
+        // [EVT.2] Emit engine initialized
+        this.events.emit('engine:initialized', {
+            engine: this,
+            scene: this.scene
+        });
+
+        console.log(`[ENG.1] Babylon Engine initialized - Version: ${BABYLON.Engine.Version}`);
+    }
+
+    // [ENG.2] Register a plugin
+    // [ENG.2.1] Validate plugin
+    // [ENG.2.2] Initialize plugin with scene, events, config
+    // [PLG.2] Manages plugin lifecycle
+    registerPlugin(name, plugin) {
+        // [ENG.2.1] Validate plugin name
+        if (!name || typeof name !== 'string') {
+            throw new Error('[ENG.2.1] Plugin name must be a non-empty string');
+        }
+
+        // [ENG.2.1] Check for duplicate registration
+        if (this.plugins.has(name)) {
+            throw new Error(`[ENG.2.1] Plugin '${name}' already registered`);
+        }
+
+        // [ENG.2.1] Validate plugin has required methods
+        if (typeof plugin.init !== 'function' || typeof plugin.start !== 'function') {
+            throw new Error(`[ENG.2.1] Plugin '${name}' must have init() and start() methods`);
+        }
+
+        // [ENG.2] Store plugin
+        this.plugins.set(name, plugin);
+
+        // [!ENG.2.2] Initialize plugin
+        // [ENG.2.2 -> PLG.1.2] Pass scene, events, config to plugin
+        // [PLG.1.2] Plugin stores these references
+        plugin.init(this.scene, this.events, this.config);
+
+        // [EVT.2] Emit plugin registered event
+        this.events.emit('plugin:registered', {
+            name,
+            plugin
+        });
+
+        console.log(`[ENG.2] Plugin registered: ${name}`);
+
+        return this; // Allow chaining
+    }
+
+    // [ENG.2.1] Get plugin by name
+    // [ENG.2.1] Allows plugins to access other plugins
+    getPlugin(name) {
+        const plugin = this.plugins.get(name);
+        if (!plugin) {
+            console.warn(`[ENG.2.1] Plugin '${name}' not found`);
+        }
+        return plugin;
+    }
+
+    // [ENG.2.1] Check if plugin is registered
+    hasPlugin(name) {
+        return this.plugins.has(name);
+    }
+
+    // [ENG.3] Start the engine
+    // [ENG.3.1] Start render loop
+    // [ENG.3.2] Setup window resize handling
+    // [PLG.1.3] Calls start() on all plugins
+    start() {
+        if (this.running) {
+            console.warn('[ENG.3] Engine already running');
+            return;
+        }
+
+        // [PLG.1.3] Start all plugins in registration order
+        // [PLG.1.3] Each plugin's start() called before render loop
+        for (const [name, plugin] of this.plugins) {
+            if (plugin.start && typeof plugin.start === 'function') {
+                try {
+                    plugin.start();
+                    console.log(`[ENG.3] Plugin started: ${name}`);
+                } catch (error) {
+                    console.error(`[ENG.3] Error starting plugin '${name}':`, error);
+                }
+            }
+        }
+
+        // [!ENG.3.1] Start render loop
+        // [ENG.3.1 -> PRF.1] Performance monitoring watches this
+        // PERFORMANCE: Runs at monitor refresh rate (typically 60 FPS)
+        this.engine.runRenderLoop(() => {
+            // [ENG.3.1] Render scene every frame
+            this.scene.render();
+
+            // [EVT.2] Emit frame event for plugins
+            // [MOV.3 -> EVT.2] MovementPlugin listens for this
+            // [PRF.1 -> EVT.2] PerformancePlugin monitors this
+            this.events.emit('render:frame', {
+                fps: this.engine.getFps(),
+                deltaTime: this.engine.getDeltaTime()
+            });
+        });
+
+        // [ENG.3.2] Handle window resize
+        // [ENG.3.2 -> CAM.2] Camera may need viewport update
+        if (typeof window !== 'undefined') {
+            window.addEventListener('resize', () => {
+                this.engine.resize();
+
+                // [EVT.2] Emit resize event
+                this.events.emit('window:resize', {
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                });
+            });
+        }
+
+        this.running = true;
+
+        // [EVT.2] Emit engine started event
+        this.events.emit('engine:started', {
+            engine: this
+        });
+
+        console.log('[ENG.3] Engine started - render loop active');
+    }
+
+    // [ENG.3] Stop the engine
+    // [ENG.3] Stops render loop but doesn't dispose resources
+    stop() {
+        if (!this.running) {
+            console.warn('[ENG.3] Engine not running');
+            return;
+        }
+
+        // [ENG.3] Stop render loop
+        this.engine.stopRenderLoop();
+        this.running = false;
+
+        // [EVT.2] Emit engine stopped event
+        this.events.emit('engine:stopped', {
+            engine: this
+        });
+
+        console.log('[ENG.3] Engine stopped');
+    }
+
+    // [ENG.4] Dispose engine and cleanup
+    // [ENG.4 -> PLG.1.5] Dispose all plugins
+    // [ENG.4] Cleanup all resources
+    dispose() {
+        console.log('[ENG.4] Disposing engine...');
+
+        // [ENG.4] Stop render loop if running
+        if (this.running) {
+            this.stop();
+        }
+
+        // [PLG.1.5] Dispose all plugins
+        for (const [name, plugin] of this.plugins) {
+            if (plugin.dispose && typeof plugin.dispose === 'function') {
+                try {
+                    plugin.dispose();
+                    console.log(`[ENG.4] Plugin disposed: ${name}`);
+                } catch (error) {
+                    console.error(`[ENG.4] Error disposing plugin '${name}':`, error);
+                }
+            }
+        }
+
+        // [ENG.4] Clear plugin map
+        this.plugins.clear();
+
+        // [ENG.4] Dispose Babylon scene and engine
+        if (this.scene) {
+            this.scene.dispose();
+        }
+        if (this.engine) {
+            this.engine.dispose();
+        }
+
+        // [ENG.4] Clear references
+        this.scene = null;
+        this.engine = null;
+        this.canvas = null;
+        this.initialized = false;
+
+        // [EVT.1.3] Clear all event listeners
+        this.events.clear();
+
+        console.log('[ENG.4] Engine disposed');
+    }
+
+    // [ENG.1] Get current scene
+    getScene() {
+        return this.scene;
+    }
+
+    // [ENG.1] Get Babylon engine
+    getEngine() {
+        return this.engine;
+    }
+
+    // [ENG.1] Get event emitter
+    getEvents() {
+        return this.events;
+    }
+
+    // [ENG.1] Check if engine is running
+    isRunning() {
+        return this.running;
+    }
+
+    // [ENG.1] Get current FPS
+    getFps() {
+        return this.engine ? this.engine.getFps() : 0;
+    }
+}
+
+// [ENG.1] Export for use in applications
+export default BabylonEngine;
