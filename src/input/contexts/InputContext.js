@@ -126,22 +126,10 @@ export default class InputContext {
      * @returns {boolean}
      */
     matchesBinding(event, binding) {
-        // [FORENSIC] Log every binding check
-        console.log(`[INP.2] Checking binding: ${binding.input} -> ${binding.action}`, {
-            eventInput: event.input,
-            bindingInput: binding.input,
-            eventState: event.state,
-            heldButton: event.heldButton,
-            isDragging: event.isDragging,
-            condition: binding.condition
-        });
-
         // [INP.2.1] Check input matches
         if (event.input !== binding.input) {
-            console.log(`[INP.2] ❌ Input mismatch: "${event.input}" !== "${binding.input}"`);
             return false;
         }
-        console.log(`[INP.2] ✅ Input matches: "${event.input}"`);
 
         // [INP.2.2] Check required modifier
         if (binding.modifier) {
@@ -152,23 +140,19 @@ export default class InputContext {
 
             for (const mod of requiredModifiers) {
                 if (!event.modifiers || !event.modifiers[mod]) {
-                    console.log(`[INP.2] ❌ Modifier missing: ${mod}`);
                     return false;
                 }
             }
-            console.log(`[INP.2] ✅ Modifiers match`);
         }
 
         // [INP.2.3] Check condition
         if (binding.condition) {
             const conditionMet = this.checkCondition(binding.condition, event);
-            console.log(`[INP.2] Condition "${binding.condition}": ${conditionMet ? '✅ PASS' : '❌ FAIL'}`);
             if (!conditionMet) {
                 return false;
             }
         }
 
-        console.log(`[INP.2] ✅✅✅ BINDING MATCHED: ${binding.input} -> ${binding.action}`);
         return true;
     }
 
@@ -182,67 +166,44 @@ export default class InputContext {
      * @returns {boolean}
      */
     checkCondition(condition, event) {
-        console.log(`[INP.2] Checking condition "${condition}"`, {
-            heldButton: event.heldButton,
-            isDragging: event.isDragging,
-            hitInfo: event.hitInfo?.hit ? 'HIT' : 'NO HIT',
-            pickedMesh: event.hitInfo?.pickedMesh?.name
-        });
-
-        let result;
         switch (condition) {
             // Common conditions
 
             case 'clickGround':
                 // Click on ground mesh
-                result = event.hitInfo?.pickedMesh?.name === 'ground';
-                console.log(`[INP.2] clickGround: ${result} (mesh: ${event.hitInfo?.pickedMesh?.name})`);
-                return result;
+                return event.hitInfo?.pickedMesh?.name === 'ground';
 
             case 'clickMesh':
                 // Click on any mesh except ground
-                result = event.hitInfo?.pickedMesh &&
+                return event.hitInfo?.pickedMesh &&
                        event.hitInfo.pickedMesh.name !== 'ground';
-                console.log(`[INP.2] clickMesh: ${result} (mesh: ${event.hitInfo?.pickedMesh?.name})`);
-                return result;
 
             case 'clickEmpty':
                 // Click on nothing
-                result = !event.hitInfo?.hit;
-                console.log(`[INP.2] clickEmpty: ${result}`);
-                return result;
+                return !event.hitInfo?.hit;
 
             case 'hasSelection':
                 // Has selected objects (check global state)
-                result = window.selectedObjects?.length > 0;
-                console.log(`[INP.2] hasSelection: ${result}`);
-                return result;
+                return window.selectedObjects?.length > 0;
 
             case 'noSelection':
                 // No selected objects
-                result = !window.selectedObjects || window.selectedObjects.length === 0;
-                console.log(`[INP.2] noSelection: ${result}`);
-                return result;
+                return !window.selectedObjects || window.selectedObjects.length === 0;
 
             // Mouse button conditions (for drag operations)
 
             case 'rightClickHeld':
-                // Right mouse button is held during movement
-                result = event.heldButton === 'RightClick';
-                console.log(`[INP.2] rightClickHeld: ${result} (heldButton: "${event.heldButton}")`);
-                return result;
+                // Right mouse button is held during movement AND dragging has started
+                return event.heldButton === 'RightClick' && event.isDragging === true;
 
             case 'leftClickHeld':
-                // Left mouse button is held during movement
-                result = event.heldButton === 'LeftClick';
-                console.log(`[INP.2] leftClickHeld: ${result} (heldButton: "${event.heldButton}")`);
-                return result;
+                // Left mouse button is held during movement AND dragging has started
+                // This ensures camera only rotates AFTER the 5px drag threshold is exceeded
+                return event.heldButton === 'LeftClick' && event.isDragging === true;
 
             case 'middleClickHeld':
-                // Middle mouse button is held during movement
-                result = event.heldButton === 'MiddleClick';
-                console.log(`[INP.2] middleClickHeld: ${result} (heldButton: "${event.heldButton}")`);
-                return result;
+                // Middle mouse button is held during movement AND dragging has started
+                return event.heldButton === 'MiddleClick' && event.isDragging === true;
 
             default:
                 console.warn(`[INP.2] Unknown condition: ${condition}`);

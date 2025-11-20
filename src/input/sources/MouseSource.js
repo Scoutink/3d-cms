@@ -164,7 +164,6 @@ export default class MouseSource extends InputSource {
         // If button is held for > holdThreshold ms without dragging, it's a "hold"
         this.holdTimer = setTimeout(() => {
             if (!this.isDragging && this.buttons.has(buttonName)) {
-                console.log('[INP.3] Hold detected:', buttonName);
                 // Send hold event
                 this.sendInput({
                     source: 'mouse',
@@ -235,7 +234,6 @@ export default class MouseSource extends InputSource {
             const timeSinceLastClick = performance.now() - this.lastClickTime;
             if (timeSinceLastClick < this.doubleClickWindow) {
                 isDoubleClick = true;
-                console.log('[INP.3] Double-click detected:', buttonName, '| Time between clicks:', timeSinceLastClick.toFixed(0), 'ms');
             }
         }
 
@@ -356,8 +354,6 @@ export default class MouseSource extends InputSource {
                     clearTimeout(this.holdTimer);
                     this.holdTimer = null;
                 }
-
-                console.log('[INP.3] Drag started - distance:', distance.toFixed(1), 'px');
             } else {
                 // Still within threshold - might be hand shake, ignore movement
                 return;
