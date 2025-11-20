@@ -79,6 +79,7 @@ export default class MouseSource extends InputSource {
         this.handlePointer = this.handlePointer.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
         this.handleWheel = this.handleWheel.bind(this);
+        this.handleContextMenu = this.handleContextMenu.bind(this);
 
         // [INP.3.4] Register Babylon.js pointer observable
         if (this.scene) {
@@ -90,6 +91,10 @@ export default class MouseSource extends InputSource {
         // [INP.3.5] Register DOM event listeners
         this.canvas.addEventListener('mousemove', this.handleMouseMove);
         this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+
+        // [INP.3.6] Prevent context menu on right-click
+        // This allows right-click+drag for camera rotation without context menu interruption
+        this.canvas.addEventListener('contextmenu', this.handleContextMenu);
 
         console.log('[INP.3] MouseSource ready');
     }
@@ -132,6 +137,7 @@ export default class MouseSource extends InputSource {
 
         // [INP.3.1] Track button state
         this.buttons.add(buttonName);
+        console.log('[INP.3] Button pressed:', buttonName, '| Active buttons:', Array.from(this.buttons));
 
         // [INP.3.2] Perform raycast to get 3D hit info
         const pickInfo = this.scene.pick(
@@ -226,6 +232,8 @@ export default class MouseSource extends InputSource {
             heldButton = 'LeftClick';
         }
 
+        console.log('[INP.3] MouseMove with button held:', heldButton, '| Delta:', this.deltaPosition);
+
         // [INP.3.5] Send to InputManager with button info
         this.sendInput({
             source: 'mouse',
@@ -237,6 +245,21 @@ export default class MouseSource extends InputSource {
             heldButton: heldButton,  // Which button is held during movement
             originalEvent: event
         });
+    }
+
+    /**
+     * [INP.3] Handle context menu event
+     *
+     * Prevents the browser's context menu from appearing on right-click.
+     * This allows right-click+drag for camera rotation without interruption.
+     *
+     * @param {MouseEvent} event - Context menu event
+     */
+    handleContextMenu(event) {
+        // [INP.3.1] Prevent context menu
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
     }
 
     /**
@@ -365,6 +388,7 @@ export default class MouseSource extends InputSource {
         // [INP.3.2] Remove DOM event listeners
         this.canvas.removeEventListener('mousemove', this.handleMouseMove);
         this.canvas.removeEventListener('wheel', this.handleWheel);
+        this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
 
         // [INP.3.3] Clear button state
         this.buttons.clear();
