@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 1: Foundation Demo - 3D CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            outline: none;
+        }
+
+        /* [UI.1] Control Panel Styles */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .control-panel h3 {
+            margin: 20px 0 10px 0;
+            font-size: 14px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .control-group button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .control-group button:hover {
+            background: #66BB6A;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .control-group button:active {
+            transform: translateY(0);
+        }
+
+        .control-group button.active {
+            background: #81C784;
+            box-shadow: 0 0 10px rgba(129, 199, 132, 0.5);
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .control-group .value-display {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #4CAF50;
+            float: right;
+        }
+
+        /* [UI.2] Info Panel */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 250px;
+        }
+
+        .info-panel h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 14px;
+        }
+
+        .info-panel .info-item {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-panel .info-label {
+            color: #aaa;
+        }
+
+        .info-panel .info-value {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        /* [UI.3] Instructions */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .instructions h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 14px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .instructions strong {
+            color: #4CAF50;
+        }
+
+        /* Scrollbar styling */
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: #66BB6A;
+        }
+    </style>
+</head>
+<body>
+    <!-- [UI.1] Canvas for 3D rendering -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- [UI.2] Instructions Panel -->
+    <div class="instructions" id="instructions">
+        <h3>🎮 Controls</h3>
+        <ul>
+            <li><strong>WASD / Arrows:</strong> Move camera</li>
+            <li><strong>Q / E:</strong> Up / Down</li>
+            <li><strong>Mouse:</strong> Look around</li>
+            <li><strong>Click:</strong> Move to point (click-to-move mode)</li>
+        </ul>
+    </div>
+
+    <!-- [UI.3] Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <h3>📊 System Info</h3>
+        <div class="info-item">
+            <span class="info-label">FPS:</span>
+            <span class="info-value" id="fps">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Camera:</span>
+            <span class="info-value" id="activeCamera">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Movement:</span>
+            <span class="info-value" id="activeMovement">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Gravity:</span>
+            <span class="info-value" id="currentGravity">-</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Position:</span>
+            <span class="info-value" id="cameraPosition">-</span>
+        </div>
+    </div>
+
+    <!-- [UI.4] Control Panel -->
+    <div class="control-panel">
+        <h2>⚙️ Phase 1 Foundation Demo</h2>
+
+        <!-- [GRV] Gravity Controls -->
+        <h3>🌍 Gravity System</h3>
+        <div class="control-group">
+            <label>Gravity Presets</label>
+            <button onclick="setGravityPreset('earth')">🌍 Earth (9.81 m/s²)</button>
+            <button onclick="setGravityPreset('moon')">🌙 Moon (1.62 m/s²)</button>
+            <button onclick="setGravityPreset('mars')">🔴 Mars (3.71 m/s²)</button>
+            <button onclick="setGravityPreset('jupiter')">🪐 Jupiter (24.79 m/s²)</button>
+            <button onclick="setGravityPreset('zeroG')">🚀 Zero-G</button>
+            <button onclick="setGravityPreset('arcade')">🎮 Arcade (0.2 m/s²)</button>
+        </div>
+
+        <!-- [CAM] Camera Controls -->
+        <h3>📷 Camera System</h3>
+        <div class="control-group">
+            <label>Camera Type</label>
+            <button onclick="switchCamera('main')">🎯 Universal Camera</button>
+            <button onclick="switchCamera('orbit')">🔄 Orbit Camera</button>
+            <button onclick="switchCamera('topDown')">⬇️ Top-Down View</button>
+        </div>
+        <div class="control-group">
+            <label>Camera Actions</label>
+            <button onclick="focusOnBalloon()">🎈 Focus on Balloon</button>
+            <button onclick="focusOnCube()">📦 Focus on Cube</button>
+            <button onclick="resetCameraPosition()">🔙 Reset Position</button>
+        </div>
+
+        <!-- [MOV] Movement Controls -->
+        <h3>🎮 Movement System</h3>
+        <div class="control-group">
+            <label>Movement Mode</label>
+            <button onclick="setMovementMode('keyboard')">⌨️ Keyboard (WASD)</button>
+            <button onclick="setMovementMode('clickToMove')">🖱️ Click-to-Move</button>
+        </div>
+        <div class="control-group">
+            <label>Movement Speed</label>
+            <input type="range" id="speedSlider" min="0.1" max="2.0" step="0.1" value="1.0"
+                   oninput="updateSpeed(this.value)">
+            <span class="value-display" id="speedValue">1.0x</span>
+        </div>
+        <div class="control-group">
+            <label>Acceleration</label>
+            <input type="range" id="accelSlider" min="0.05" max="1.0" step="0.05" value="0.1"
+                   oninput="updateAcceleration(this.value)">
+            <span class="value-display" id="accelValue">0.10</span>
+        </div>
+
+        <!-- [COL] Object Controls -->
+        <h3>🎈 Anti-Gravity Demo</h3>
+        <div class="control-group">
+            <label>Balloon Anti-Gravity</label>
+            <input type="range" id="balloonGravitySlider" min="-2.0" max="2.0" step="0.1" value="-0.3"
+                   oninput="updateBalloonGravity(this.value)">
+            <span class="value-display" id="balloonGravityValue">-0.30</span>
+        </div>
+        <div class="control-group">
+            <label>Balloon Actions</label>
+            <button onclick="resetBalloon()">🔄 Reset Balloon</button>
+            <button onclick="spawnBalloon()">➕ Add Balloon</button>
+        </div>
+
+        <!-- [COL] Physics Demo -->
+        <h3>💥 Physics Demo</h3>
+        <div class="control-group">
+            <button onclick="spawnBouncyBall()">⚽ Spawn Bouncy Ball</button>
+            <button onclick="spawnHeavyBox()">📦 Spawn Heavy Box</button>
+            <button onclick="clearDynamicObjects()">🗑️ Clear Objects</button>
+        </div>
+    </div>
+
+    <!-- [ENG] Load Babylon.js and dependencies -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+
+    <!-- [PLG] Load Core System -->
+    <script type="module">
+        // [ENG.1] Import core engine and plugins
+        import BabylonEngine from '../src/core/BabylonEngine.js';
+        import ConfigLoader from '../src/config/ConfigLoader.js';
+
+        // [PLG.1] Import Phase 1 plugins
+        import GravityPlugin from '../src/plugins/GravityPlugin.js';
+        import CameraPlugin from '../src/plugins/CameraPlugin.js';
+        import CollisionPlugin from '../src/plugins/CollisionPlugin.js';
+        import MovementPlugin from '../src/plugins/MovementPlugin.js';
+
+        // [ENG.1.1] Global references for UI controls
+        window.engine = null;
+        window.scene = null;
+        window.balloon = null;
+        window.cube = null;
+        window.dynamicObjects = [];
+
+        // [!ENG.1] CRITICAL: Initialize engine
+        async function init() {
+            console.log('[DEMO] Initializing Phase 1 Foundation Demo');
+
+            // [CFG.1] Load configuration
+            const config = await ConfigLoader.load('../config/engine-config.json');
+
+            // [ENG.1.2] Create engine instance
+            const canvas = document.getElementById('renderCanvas');
+            window.engine = new BabylonEngine(canvas, config);
+
+            // [PLG.2] Register all Phase 1 plugins
+            console.log('[DEMO] Registering plugins...');
+            window.engine.registerPlugin('gravity', new GravityPlugin());
+            window.engine.registerPlugin('camera', new CameraPlugin());
+            window.engine.registerPlugin('collision', new CollisionPlugin());
+            window.engine.registerPlugin('movement', new MovementPlugin());
+
+            // [ENG.1.3] Start engine
+            await window.engine.start();
+
+            window.scene = window.engine.scene;
+
+            // [DEMO.1] Setup scene
+            setupScene();
+
+            // [DEMO.2] Setup event listeners
+            setupEventListeners();
+
+            // [DEMO.3] Start render loop with info updates
+            startInfoUpdates();
+
+            console.log('[DEMO] Phase 1 Foundation Demo ready! 🚀');
+        }
+
+        // [DEMO.1] Create demo scene
+        function setupScene() {
+            const scene = window.scene;
+            const gravityPlugin = window.engine.getPlugin('gravity');
+            const cameraPlugin = window.engine.getPlugin('camera');
+            const collisionPlugin = window.engine.getPlugin('collision');
+
+            console.log('[DEMO.1] Setting up scene...');
+
+            // [LGT.1] Create basic lighting
+            // [LGT.1.1] Hemisphere light for soft ambient
+            const hemiLight = new BABYLON.HemisphericLight(
+                'hemiLight',
+                new BABYLON.Vector3(0, 1, 0),
+                scene
+            );
+            hemiLight.intensity = 0.6;
+            hemiLight.groundColor = new BABYLON.Color3(0.2, 0.2, 0.3);
+
+            // [LGT.1.2] Directional light for sun
+            const dirLight = new BABYLON.DirectionalLight(
+                'dirLight',
+                new BABYLON.Vector3(-1, -2, -1),
+                scene
+            );
+            dirLight.intensity = 0.8;
+            dirLight.position = new BABYLON.Vector3(20, 40, 20);
+
+            // [GRD.1] Create ground
+            const ground = BABYLON.MeshBuilder.CreateGround(
+                'ground',
+                { width: 50, height: 50, subdivisions: 4 },
+                scene
+            );
+
+            // [MAT.1] Ground material
+            const groundMat = new BABYLON.StandardMaterial('groundMat', scene);
+            groundMat.diffuseColor = new BABYLON.Color3(0.3, 0.5, 0.3);
+            groundMat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+            ground.material = groundMat;
+
+            // [COL.2] Enable collision for ground
+            collisionPlugin.enableSimpleCollision(ground);
+            collisionPlugin.enablePhysicsBody(ground, { mass: 0 }); // Static
+
+            // [DEMO.1.1] Create anti-gravity balloon (USER'S EXAMPLE!)
+            window.balloon = BABYLON.MeshBuilder.CreateSphere(
+                'balloon',
+                { diameter: 2, segments: 32 },
+                scene
+            );
+            window.balloon.position = new BABYLON.Vector3(-5, 3, 0);
+
+            // [MAT.1] Balloon material (red, shiny)
+            const balloonMat = new BABYLON.StandardMaterial('balloonMat', scene);
+            balloonMat.diffuseColor = new BABYLON.Color3(1, 0.2, 0.2);
+            balloonMat.emissiveColor = new BABYLON.Color3(0.2, 0, 0);
+            balloonMat.specularColor = new BABYLON.Color3(1, 1, 1);
+            balloonMat.specularPower = 64;
+            window.balloon.material = balloonMat;
+
+            // [COL.3] Enable physics for balloon
+            const balloonAggregate = collisionPlugin.enablePhysicsBody(window.balloon, {
+                shape: BABYLON.PhysicsShapeType.SPHERE,
+                mass: 0.5, // Light
+                restitution: 0.8, // Bouncy
+                friction: 0.1 // Slippery
+            });
+
+            // [!GRV.5] ANTI-GRAVITY! (User's specific example)
+            // Scene gravity is 9.81, balloon has -0.3 multiplier = floats up!
+            gravityPlugin.setObjectGravityMultiplier(window.balloon, -0.3);
+
+            console.log('[DEMO.1.1] Anti-gravity balloon created! 🎈');
+
+            // [DEMO.1.2] Create reference cube
+            window.cube = BABYLON.MeshBuilder.CreateBox(
+                'cube',
+                { size: 2 },
+                scene
+            );
+            window.cube.position = new BABYLON.Vector3(5, 2, 0);
+
+            // [MAT.1] Cube material (blue)
+            const cubeMat = new BABYLON.StandardMaterial('cubeMat', scene);
+            cubeMat.diffuseColor = new BABYLON.Color3(0.2, 0.4, 1);
+            cubeMat.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+            window.cube.material = cubeMat;
+
+            // [COL.3] Enable physics for cube
+            collisionPlugin.enablePhysicsBody(window.cube, {
+                shape: BABYLON.PhysicsShapeType.BOX,
+                mass: 5, // Heavy
+                restitution: 0.3,
+                friction: 0.5
+            });
+
+            // [DEMO.1.3] Create additional cameras
+            // Orbit camera for showcasing
+            cameraPlugin.createCamera('arcRotate', 'orbit', {
+                alpha: Math.PI / 2,
+                beta: Math.PI / 3,
+                radius: 20,
+                target: { x: 0, y: 2, z: 0 },
+                sensitivityX: 1000,
+                sensitivityY: 1000
+            });
+
+            // Top-down camera
+            cameraPlugin.createCamera('universal', 'topDown', {
+                position: { x: 0, y: 30, z: 0 },
+                speed: 0.5
+            });
+
+            // Point top-down camera downward
+            setTimeout(() => {
+                const topDownCam = cameraPlugin.getCamera('topDown');
+                if (topDownCam) {
+                    topDownCam.camera.rotation.x = Math.PI / 2;
+                }
+            }, 100);
+
+            console.log('[DEMO.1] Scene setup complete!');
+        }
+
+        // [DEMO.2] Setup event listeners
+        function setupEventListeners() {
+            const events = window.engine.events;
+
+            // [EVT.1] Listen to gravity changes
+            events.on('gravity:changed', (data) => {
+                console.log('[DEMO.2] Gravity changed:', data);
+                updateInfoDisplay();
+            });
+
+            // [EVT.1] Listen to camera changes
+            events.on('camera:changed', (data) => {
+                console.log('[DEMO.2] Camera changed:', data.name);
+                updateInfoDisplay();
+            });
+
+            // [EVT.1] Listen to movement mode changes
+            events.on('movement:mode:changed', (data) => {
+                console.log('[DEMO.2] Movement mode:', data.mode);
+                updateInfoDisplay();
+            });
+
+            // [EVT.1] Listen to physics events
+            events.on('physics:enabled', (data) => {
+                console.log('[DEMO.2] Physics enabled:', data.engine);
+            });
+
+            // [EVT.1] Listen to render frames (for FPS)
+            events.on('render:frame', (data) => {
+                if (Math.floor(data.fps) !== lastFPS) {
+                    lastFPS = Math.floor(data.fps);
+                    document.getElementById('fps').textContent = lastFPS;
+                }
+            });
+        }
+
+        let lastFPS = 0;
+
+        // [DEMO.3] Update info display
+        function startInfoUpdates() {
+            setInterval(updateInfoDisplay, 100);
+        }
+
+        function updateInfoDisplay() {
+            const cameraPlugin = window.engine.getPlugin('camera');
+            const movementPlugin = window.engine.getPlugin('movement');
+            const gravityPlugin = window.engine.getPlugin('gravity');
+
+            // Update camera info
+            const activeCam = cameraPlugin.getActiveCamera();
+            document.getElementById('activeCamera').textContent =
+                activeCam ? activeCam.type : '-';
+
+            // Update movement info
+            const activeMode = movementPlugin.getActiveMode();
+            document.getElementById('activeMovement').textContent =
+                activeMode ? activeMode.name : '-';
+
+            // Update gravity info
+            const gravity = gravityPlugin.getCurrent();
+            document.getElementById('currentGravity').textContent =
+                `${Math.abs(gravity.y).toFixed(2)} m/s²`;
+
+            // Update camera position
+            const camera = window.scene.activeCamera;
+            if (camera) {
+                const pos = camera.position;
+                document.getElementById('cameraPosition').textContent =
+                    `(${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})`;
+            }
+        }
+
+        // [UI.5] Expose control functions to global scope
+        window.setGravityPreset = function(preset) {
+            const gravityPlugin = window.engine.getPlugin('gravity');
+            gravityPlugin.usePreset(preset);
+            console.log(`[UI] Gravity preset: ${preset}`);
+        };
+
+        window.switchCamera = function(cameraName) {
+            const cameraPlugin = window.engine.getPlugin('camera');
+            cameraPlugin.setActiveCamera(cameraName, 1.0); // 1 second transition
+            console.log(`[UI] Switched to camera: ${cameraName}`);
+        };
+
+        window.setMovementMode = function(mode) {
+            const movementPlugin = window.engine.getPlugin('movement');
+            movementPlugin.setMode(mode);
+            console.log(`[UI] Movement mode: ${mode}`);
+        };
+
+        window.updateSpeed = function(value) {
+            const movementPlugin = window.engine.getPlugin('movement');
+            movementPlugin.setGlobalSpeedMultiplier(parseFloat(value));
+            document.getElementById('speedValue').textContent = `${value}x`;
+        };
+
+        window.updateAcceleration = function(value) {
+            const movementPlugin = window.engine.getPlugin('movement');
+            movementPlugin.setAcceleration(parseFloat(value));
+            document.getElementById('accelValue').textContent = parseFloat(value).toFixed(2);
+        };
+
+        window.updateBalloonGravity = function(value) {
+            const gravityPlugin = window.engine.getPlugin('gravity');
+            if (window.balloon) {
+                gravityPlugin.setObjectGravityMultiplier(window.balloon, parseFloat(value));
+                document.getElementById('balloonGravityValue').textContent =
+                    parseFloat(value).toFixed(2);
+                console.log(`[UI] Balloon gravity multiplier: ${value}`);
+            }
+        };
+
+        window.focusOnBalloon = function() {
+            const cameraPlugin = window.engine.getPlugin('camera');
+            if (window.balloon) {
+                const targetPos = window.balloon.position.add(new BABYLON.Vector3(0, 2, 8));
+                cameraPlugin.moveCameraTo(targetPos, 1.5);
+                console.log('[UI] Focusing on balloon');
+            }
+        };
+
+        window.focusOnCube = function() {
+            const cameraPlugin = window.engine.getPlugin('camera');
+            if (window.cube) {
+                const targetPos = window.cube.position.add(new BABYLON.Vector3(0, 2, 8));
+                cameraPlugin.moveCameraTo(targetPos, 1.5);
+                console.log('[UI] Focusing on cube');
+            }
+        };
+
+        window.resetCameraPosition = function() {
+            const cameraPlugin = window.engine.getPlugin('camera');
+            cameraPlugin.moveCameraTo({ x: 0, y: 2, z: -10 }, 1.0);
+            console.log('[UI] Camera position reset');
+        };
+
+        window.resetBalloon = function() {
+            if (window.balloon) {
+                window.balloon.position = new BABYLON.Vector3(-5, 3, 0);
+                if (window.balloon.physicsBody) {
+                    window.balloon.physicsBody.setLinearVelocity(BABYLON.Vector3.Zero());
+                    window.balloon.physicsBody.setAngularVelocity(BABYLON.Vector3.Zero());
+                }
+                console.log('[UI] Balloon reset');
+            }
+        };
+
+        window.spawnBalloon = function() {
+            const scene = window.scene;
+            const collisionPlugin = window.engine.getPlugin('collision');
+            const gravityPlugin = window.engine.getPlugin('gravity');
+
+            const newBalloon = BABYLON.MeshBuilder.CreateSphere(
+                'balloon_' + Date.now(),
+                { diameter: 2, segments: 32 },
+                scene
+            );
+
+            // Random position
+            newBalloon.position = new BABYLON.Vector3(
+                Math.random() * 10 - 5,
+                5,
+                Math.random() * 10 - 5
+            );
+
+            // Material
+            const mat = new BABYLON.StandardMaterial('balloonMat_' + Date.now(), scene);
+            mat.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+            mat.emissiveColor = mat.diffuseColor.scale(0.2);
+            mat.specularColor = new BABYLON.Color3(1, 1, 1);
+            mat.specularPower = 64;
+            newBalloon.material = mat;
+
+            // Physics
+            collisionPlugin.enablePhysicsBody(newBalloon, {
+                shape: BABYLON.PhysicsShapeType.SPHERE,
+                mass: 0.5,
+                restitution: 0.8,
+                friction: 0.1
+            });
+
+            // Anti-gravity
+            gravityPlugin.setObjectGravityMultiplier(newBalloon, -0.3);
+
+            window.dynamicObjects.push(newBalloon);
+            console.log('[UI] Spawned new balloon 🎈');
+        };
+
+        window.spawnBouncyBall = function() {
+            const scene = window.scene;
+            const collisionPlugin = window.engine.getPlugin('collision');
+
+            const ball = BABYLON.MeshBuilder.CreateSphere(
+                'ball_' + Date.now(),
+                { diameter: 1.5, segments: 32 },
+                scene
+            );
+
+            ball.position = new BABYLON.Vector3(
+                Math.random() * 10 - 5,
+                10,
+                Math.random() * 10 - 5
+            );
+
+            // Material
+            const mat = new BABYLON.StandardMaterial('ballMat_' + Date.now(), scene);
+            mat.diffuseColor = new BABYLON.Color3(1, 0.5, 0);
+            mat.specularColor = new BABYLON.Color3(1, 1, 1);
+            mat.specularPower = 128;
+            ball.material = mat;
+
+            // Physics (super bouncy!)
+            collisionPlugin.enablePhysicsBody(ball, {
+                shape: BABYLON.PhysicsShapeType.SPHERE,
+                mass: 2,
+                restitution: 0.95, // Very bouncy!
+                friction: 0.2
+            });
+
+            window.dynamicObjects.push(ball);
+            console.log('[UI] Spawned bouncy ball ⚽');
+        };
+
+        window.spawnHeavyBox = function() {
+            const scene = window.scene;
+            const collisionPlugin = window.engine.getPlugin('collision');
+
+            const box = BABYLON.MeshBuilder.CreateBox(
+                'box_' + Date.now(),
+                { size: 2 },
+                scene
+            );
+
+            box.position = new BABYLON.Vector3(
+                Math.random() * 10 - 5,
+                10,
+                Math.random() * 10 - 5
+            );
+
+            // Material
+            const mat = new BABYLON.StandardMaterial('boxMat_' + Date.now(), scene);
+            mat.diffuseColor = new BABYLON.Color3(0.5, 0.3, 0.1);
+            mat.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+            box.material = mat;
+
+            // Physics (heavy, low bounce)
+            collisionPlugin.enablePhysicsBody(box, {
+                shape: BABYLON.PhysicsShapeType.BOX,
+                mass: 10, // Heavy!
+                restitution: 0.1, // Barely bounces
+                friction: 0.8 // High friction
+            });
+
+            window.dynamicObjects.push(box);
+            console.log('[UI] Spawned heavy box 📦');
+        };
+
+        window.clearDynamicObjects = function() {
+            window.dynamicObjects.forEach(obj => obj.dispose());
+            window.dynamicObjects = [];
+            console.log('[UI] Cleared dynamic objects 🗑️');
+        };
+
+        // [ENG.1] Start initialization
+        init().catch(error => {
+            console.error('[DEMO] Initialization failed:', error);
+            alert('Failed to initialize demo. Check console for details.');
+        });
+    </script>
+</body>
+</html>

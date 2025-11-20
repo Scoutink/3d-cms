@@ -41,6 +41,13 @@
     "acceleration": 0.1,
     "keyboard": {
       "speed": 0.5
+    },
+    "clickToMove": {
+      "speed": 0.1,
+      "threshold": 0.5,
+      "showMarkers": true,
+      "markerDuration": 1000,
+      "doubleClickWindow": 400
     }
   },
   "lighting": {
