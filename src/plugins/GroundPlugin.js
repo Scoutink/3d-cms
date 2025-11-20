@@ -213,6 +213,9 @@ class GroundPlugin extends Plugin {
         // [GRD.5] Apply default material
         this.applyDefaultMaterial(ground);
 
+        // [MOV.5] Ensure ground is pickable for click-to-move
+        ground.isPickable = true;
+
         return ground;
     }
 
@@ -237,6 +240,9 @@ class GroundPlugin extends Plugin {
         material.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
         material.wireframe = true;
         ground.material = material;
+
+        // [MOV.5] Ensure ground is pickable for click-to-move
+        ground.isPickable = true;
 
         return ground;
     }
@@ -268,12 +274,18 @@ class GroundPlugin extends Plugin {
                     // [GRD.5] Apply default material
                     this.applyDefaultMaterial(ground);
 
+                    // [MOV.5] Ensure ground is pickable for click-to-move
+                    ground.isPickable = true;
+
                     // [EVT.2] Emit heightmap ready
                     this.events.emit('ground:heightmap:ready', { ground });
                 }
             },
             this.scene
         );
+
+        // [MOV.5] Set pickable immediately (before heightmap loads)
+        ground.isPickable = true;
 
         return ground;
     }
@@ -658,6 +670,7 @@ class GroundPlugin extends Plugin {
             // Make wall invisible but still collidable
             wall.isVisible = false;
             wall.checkCollisions = true;
+            wall.isPickable = false; // CRITICAL: Don't block raycasts for click-to-move
 
             this.boundaryWalls.push(wall);
         });
