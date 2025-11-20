@@ -271,9 +271,6 @@
         import UIPlugin from '../src/plugins/UIPlugin.js';
         import PerformancePlugin from '../src/plugins/PerformancePlugin.js';
 
-        // [MOV] Import movement for click-to-move
-        import ClickToMoveMovement from '../src/movement/ClickToMoveMovement.js';
-
         // [DEMO] Global references
         window.engine = null;
         window.scene = null;
@@ -380,6 +377,92 @@
             document.getElementById('loadingText').textContent = text;
         }
 
+        // [INP.1] Setup InputManager action listeners
+        // [INP.1] Responds to abstract actions (moveForward, lookAround, etc.)
+        function setupInputActions(camera, inputManager, scene) {
+            const moveSpeed = 0.3;
+            const lookSpeed = 0.002;
+
+            // [INP.1] Camera movement actions
+            inputManager.on('action:moveForward', () => {
+                camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Forward()).scale(moveSpeed));
+            });
+
+            inputManager.on('action:moveBackward', () => {
+                camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Backward()).scale(moveSpeed));
+            });
+
+            inputManager.on('action:moveLeft', () => {
+                camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Left()).scale(moveSpeed));
+            });
+
+            inputManager.on('action:moveRight', () => {
+                camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Right()).scale(moveSpeed));
+            });
+
+            inputManager.on('action:moveUp', () => {
+                camera.position.y += moveSpeed;
+            });
+
+            inputManager.on('action:moveDown', () => {
+                camera.position.y -= moveSpeed;
+            });
+
+            // [INP.1] Camera rotation (mouse look)
+            inputManager.on('action:lookAround', (action) => {
+                // action.value contains delta movement from MouseSource
+                if (action.value && action.value.delta) {
+                    const delta = action.value.delta;
+                    camera.rotation.y += delta.x * lookSpeed;
+                    camera.rotation.x += delta.y * lookSpeed;
+
+                    // Clamp vertical rotation
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                }
+            });
+
+            // [INP.1] Click-to-move action (walkTo)
+            let walkTarget = null;
+            let walkSpeed = 0.15;
+
+            inputManager.on('action:walkTo', (action) => {
+                // action.value contains hitInfo from MouseSource
+                if (action.value && action.value.hitInfo && action.value.hitInfo.hit) {
+                    walkTarget = action.value.hitInfo.pickedPoint.clone();
+                    walkTarget.y = camera.position.y; // Keep same height
+                    console.log('[INP.1] Walking to:', walkTarget);
+                }
+            });
+
+            // [INP.1] Update walk-to-target every frame
+            scene.onBeforeRenderObservable.add(() => {
+                if (walkTarget) {
+                    const direction = walkTarget.subtract(camera.position);
+                    const distance = direction.length();
+
+                    if (distance < 0.5) {
+                        // Arrived
+                        walkTarget = null;
+                    } else {
+                        // Move towards target
+                        direction.normalize();
+                        camera.position.addInPlace(direction.scale(walkSpeed));
+                    }
+                }
+            });
+
+            // [INP.1] Zoom action
+            inputManager.on('action:zoom', (action) => {
+                // action.value contains wheel delta
+                if (action.value !== undefined) {
+                    const zoomAmount = action.value * 0.5;
+                    camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Forward()).scale(zoomAmount));
+                }
+            });
+
+            console.log('[INP.1] Input actions configured for View mode');
+        }
+
         // [DEMO.1] Setup scene
         async function setupScene() {
             const scene = window.scene;
@@ -424,32 +507,22 @@
                 scene
             );
             camera.setTarget(new BABYLON.Vector3(0, 1, 0));
-            const canvas = scene.getEngine().getRenderingCanvas();
-            camera.attachControl(canvas, true);
             camera.speed = 0.3;
-            camera.angularSensibility = 3000;
             camera.checkCollisions = true;
             camera.applyGravity = true;
             camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1);
 
-            // [MOV] Setup click-to-move
-            // MovementPlugin only supports one active mode at a time (keyboard by default)
-            // So we manually setup click-to-move for ground clicking
-            const clickToMove = new ClickToMoveMovement();
-            clickToMove.activate(camera, scene);
-            console.log('[MOV] Click-to-move activated');
+            // [INP.1] Get InputManager from engine
+            // [INP.1] No more camera.attachControl() - InputManager handles ALL input now
+            const inputManager = window.engine.getInputManager();
 
-            // [MOV] Manual update loop for click-to-move
-            // This allows both keyboard and click-to-move to work simultaneously
-            scene.onBeforeRenderObservable.add(() => {
-                if (clickToMove.enabled && clickToMove.target) {
-                    const velocity = clickToMove.getVelocity();
-                    if (velocity.length() > 0) {
-                        camera.position.addInPlace(velocity);
-                    }
-                }
-            });
-            console.log('[MOV] Click-to-move update loop registered');
+            // Store camera reference for action handlers
+            window.camera = camera;
+
+            console.log('[INP.1] Using InputManager for all camera controls (View mode)');
+
+            // [INP.1] Setup action listeners for camera movement
+            setupInputActions(camera, inputManager, scene);
 
             // [DEMO] Create demo objects
             await createDemoObjects();

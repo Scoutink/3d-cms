@@ -23,6 +23,12 @@
  */
 
 import EventEmitter from './EventEmitter.js';
+import InputManager from '../input/InputManager.js';
+import KeyboardSource from '../input/sources/KeyboardSource.js';
+import MouseSource from '../input/sources/MouseSource.js';
+import TouchSource from '../input/sources/TouchSource.js';
+import ViewModeContext from '../input/contexts/ViewModeContext.js';
+import EditModeContext from '../input/contexts/EditModeContext.js';
 
 // [ENG] Core Babylon engine wrapper and plugin orchestrator
 // [!ENG.1] CRITICAL: All plugins depend on this for scene access
@@ -71,6 +77,44 @@ class BabylonEngine {
             window.__babylonScene = this.scene;
         }
 
+        // [INP.1] Initialize InputManager
+        // [INP.1 -> ENG.2.2] InputManager will be passed to plugins
+        // [INP.1] Centralized input handling for all modes (View, Edit, VR, AR, etc.)
+        this.inputManager = new InputManager(this.scene, this.canvas);
+
+        // [INP.3] Register input sources
+        // [INP.3.1] Keyboard - key press/release, modifiers, repeat detection
+        const keyboardSource = new KeyboardSource(this.inputManager);
+        this.inputManager.registerSource('keyboard', keyboardSource);
+
+        // [INP.3.2] Mouse - clicks, movement, wheel, 3D raycasting
+        const mouseSource = new MouseSource(this.inputManager, this.scene);
+        this.inputManager.registerSource('mouse', mouseSource);
+
+        // [INP.3.3] Touch - gestures (tap, swipe, pinch, long-press), multi-touch
+        const touchSource = new TouchSource(this.inputManager, this.scene);
+        this.inputManager.registerSource('touch', touchSource);
+
+        // [INP.2] Register input contexts
+        // [INP.2.1] View mode - camera controls, click-to-move, zoom
+        const viewContext = new ViewModeContext();
+        this.inputManager.registerContext('view', viewContext);
+
+        // [INP.2.2] Edit mode - all view controls + object manipulation
+        const editContext = new EditModeContext();
+        this.inputManager.registerContext('edit', editContext);
+
+        // [INP.1] Set default context to view mode
+        this.inputManager.setContext('view');
+
+        // [INP.1] Expose InputManager globally for debugging
+        if (typeof window !== 'undefined') {
+            window.__inputManager = this.inputManager;
+        }
+
+        console.log('[INP.1] InputManager initialized with keyboard, mouse, touch sources');
+        console.log('[INP.2] Registered contexts: view, edit');
+
         // [ENG.1] Engine state
         this.running = false;
         this.initialized = true;
@@ -108,9 +152,10 @@ class BabylonEngine {
         this.plugins.set(name, plugin);
 
         // [!ENG.2.2] Initialize plugin
-        // [ENG.2.2 -> PLG.1.2] Pass scene, events, config to plugin
+        // [ENG.2.2 -> PLG.1.2] Pass scene, events, config, inputManager to plugin
         // [PLG.1.2] Plugin stores these references
-        plugin.init(this.scene, this.events, this.config);
+        // [INP.1 -> PLG.1.2] Plugins can access InputManager for listening to actions
+        plugin.init(this.scene, this.events, this.config, this.inputManager);
 
         // [EVT.2] Emit plugin registered event
         this.events.emit('plugin:registered', {
@@ -247,6 +292,13 @@ class BabylonEngine {
         // [ENG.4] Clear plugin map
         this.plugins.clear();
 
+        // [INP.1] Dispose InputManager
+        // [INP.1] Removes all event listeners and cleans up input sources
+        if (this.inputManager) {
+            this.inputManager.dispose();
+            this.inputManager = null;
+        }
+
         // [ENG.4] Dispose Babylon scene and engine
         if (this.scene) {
             this.scene.dispose();
@@ -280,6 +332,12 @@ class BabylonEngine {
     // [ENG.1] Get event emitter
     getEvents() {
         return this.events;
+    }
+
+    // [INP.1] Get InputManager
+    // [INP.1 -> PLG.*] Plugins can access InputManager for listening to actions
+    getInputManager() {
+        return this.inputManager;
     }
 
     // [ENG.1] Check if engine is running

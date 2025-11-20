@@ -36,6 +36,7 @@ class Plugin {
         this.scene = null;
         this.events = null;
         this.config = null;
+        this.inputManager = null;
 
         // [PLG.1.4] Enable/disable state
         this.enabled = true;
@@ -50,9 +51,10 @@ class Plugin {
     // [PLG.1.2 -> ENG.1.3] Receives scene from BabylonEngine
     // [PLG.1.2 -> EVT.1] Receives event emitter
     // [PLG.1.2 -> CFG.1] Receives configuration
+    // [PLG.1.2 -> INP.1] Receives InputManager for listening to actions
     // Called by: BabylonEngine.registerPlugin()
     // Timing: Before start(), after engine creates scene
-    init(scene, events, config) {
+    init(scene, events, config, inputManager) {
         if (this.initialized) {
             console.warn(`[PLG.1.2] Plugin ${this.name} already initialized`);
             return;
@@ -62,6 +64,7 @@ class Plugin {
         this.scene = scene;
         this.events = events;
         this.config = config;
+        this.inputManager = inputManager;
 
         // [PLG.2] Subscribe to events if defined in child class
         // [PLG.2] Child classes can define subscriptions object
@@ -160,6 +163,7 @@ class Plugin {
         this.scene = null;
         this.events = null;
         this.config = null;
+        this.inputManager = null;
         this.initialized = false;
         this.started = false;
     }
