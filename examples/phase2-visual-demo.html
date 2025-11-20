@@ -686,10 +686,35 @@
             camera.applyGravity = true;
             camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1); // Collision shape
 
-            // [MOV] Movement now handled by MovementPlugin
-            // Keyboard: WASD/Arrow keys for movement
-            // Click-to-Move: Click on ground to move camera there
-            // Movement modes registered automatically by plugin
+            // [MOV] Activate click-to-move
+            // CRITICAL: MovementPlugin only activates ONE mode at a time
+            // Camera already has keyboard controls via attachControl()
+            // So we manually activate click-to-move mode for clicking
+            const movementPlugin = window.engine.getPlugin('movement');
+            if (movementPlugin) {
+                // Get the click-to-move mode instance
+                const clickToMove = movementPlugin.modes.get('clickToMove');
+                if (clickToMove) {
+                    // Activate it manually (this registers the click observer)
+                    clickToMove.activate(camera, scene);
+                    console.log('[MOV] Click-to-move manually activated');
+
+                    // [MOV] Manual update loop for click-to-move
+                    // MovementPlugin.update() only processes activeMode (keyboard)
+                    // So we need a separate update loop for click-to-move movement
+                    scene.onBeforeRenderObservable.add(() => {
+                        if (clickToMove.enabled && clickToMove.target) {
+                            const velocity = clickToMove.getVelocity();
+                            if (velocity.length() > 0) {
+                                camera.position.addInPlace(velocity);
+                            }
+                        }
+                    });
+                    console.log('[MOV] Click-to-move update loop registered');
+                } else {
+                    console.warn('[MOV] Click-to-move mode not found');
+                }
+            }
 
             console.log('[DEMO.1] Scene setup complete!');
         }
