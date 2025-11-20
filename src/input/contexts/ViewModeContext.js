@@ -67,12 +67,13 @@ export default class ViewModeContext extends InputContext {
             // Camera Rotation
             // =================================================================
 
-            // Mouse look (RIGHT-CLICK + DRAG)
-            // Standard 3D editor behavior: hold right mouse button and drag to rotate camera
+            // Mouse look (LEFT-CLICK + DRAG)
+            // User feedback: Simple and intuitive - left-click+drag to rotate camera
+            // Distinguishes from single click (select/walk) via 5px drag threshold
             {
                 input: 'MouseMove',
                 action: 'lookAround',
-                condition: 'rightClickHeld',  // Only when right-click is held
+                condition: 'leftClickHeld',  // Only when left-click is held AND dragging
                 filters: {
                     smoothing: 0.3  // Smooth camera rotation
                 }

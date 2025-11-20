@@ -75,6 +75,20 @@ export default class MouseSource extends InputSource {
         this.deltaPosition = { x: 0, y: 0 };
         this.buttons = new Set(); // Currently pressed buttons
 
+        // [INP.3.2.1] Click detection state
+        // Used to distinguish between click, double-click, drag, and hold
+        this.clickStartPosition = null;  // Where button was pressed
+        this.clickStartTime = null;      // When button was pressed
+        this.lastClickTime = null;       // Last click time (for double-click)
+        this.lastClickButton = null;     // Last button clicked (for double-click)
+        this.isDragging = false;         // Is user currently dragging?
+        this.holdTimer = null;           // Timer for hold detection
+
+        // [INP.3.2.2] Detection thresholds (tuned for good UX)
+        this.dragThreshold = 5;          // Pixels - ignore hand shake/tiny movements
+        this.doubleClickWindow = 300;    // Milliseconds - time window for double-click
+        this.holdThreshold = 500;        // Milliseconds - time before it's a "hold"
+
         // [INP.3.3] Bind event handlers
         this.handlePointer = this.handlePointer.bind(this);
         this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -137,7 +151,34 @@ export default class MouseSource extends InputSource {
 
         // [INP.3.1] Track button state
         this.buttons.add(buttonName);
-        console.log('[INP.3] Button pressed:', buttonName, '| Active buttons:', Array.from(this.buttons));
+
+        // [INP.3.1.1] Record click start for drag detection
+        this.clickStartPosition = {
+            x: this.scene.pointerX,
+            y: this.scene.pointerY
+        };
+        this.clickStartTime = performance.now();
+        this.isDragging = false;
+
+        // [INP.3.1.2] Start hold timer
+        // If button is held for > holdThreshold ms without dragging, it's a "hold"
+        this.holdTimer = setTimeout(() => {
+            if (!this.isDragging && this.buttons.has(buttonName)) {
+                console.log('[INP.3] Hold detected:', buttonName);
+                // Send hold event
+                this.sendInput({
+                    source: 'mouse',
+                    input: buttonName + 'Hold',
+                    state: 'held',
+                    position: {
+                        x: this.scene.pointerX,
+                        y: this.scene.pointerY
+                    },
+                    duration: performance.now() - this.clickStartTime,
+                    originalEvent: event
+                });
+            }
+        }, this.holdThreshold);
 
         // [INP.3.2] Perform raycast to get 3D hit info
         const pickInfo = this.scene.pick(
@@ -145,7 +186,7 @@ export default class MouseSource extends InputSource {
             this.scene.pointerY
         );
 
-        // [INP.3.3] Send to InputManager
+        // [INP.3.3] Send button pressed event to InputManager
         this.sendInput({
             source: 'mouse',
             input: buttonName,
@@ -176,20 +217,106 @@ export default class MouseSource extends InputSource {
         const button = event.button;
         const buttonName = this.getButtonName(button);
 
-        // [INP.3.1] Remove from button state
+        // [INP.3.1] Clear hold timer
+        if (this.holdTimer) {
+            clearTimeout(this.holdTimer);
+            this.holdTimer = null;
+        }
+
+        // [INP.3.2] Calculate click duration
+        const clickDuration = this.clickStartTime ? performance.now() - this.clickStartTime : 0;
+
+        // [INP.3.3] Determine if it was a click (not a drag)
+        const wasClick = !this.isDragging;
+
+        // [INP.3.4] Detect double-click
+        let isDoubleClick = false;
+        if (wasClick && this.lastClickTime && this.lastClickButton === buttonName) {
+            const timeSinceLastClick = performance.now() - this.lastClickTime;
+            if (timeSinceLastClick < this.doubleClickWindow) {
+                isDoubleClick = true;
+                console.log('[INP.3] Double-click detected:', buttonName, '| Time between clicks:', timeSinceLastClick.toFixed(0), 'ms');
+            }
+        }
+
+        // [INP.3.5] Update last click time for double-click detection
+        if (wasClick) {
+            this.lastClickTime = performance.now();
+            this.lastClickButton = buttonName;
+        }
+
+        // [INP.3.6] Perform raycast for click events
+        let pickInfo = null;
+        if (wasClick) {
+            pickInfo = this.scene.pick(
+                this.scene.pointerX,
+                this.scene.pointerY
+            );
+        }
+
+        // [INP.3.7] Remove from button state
         this.buttons.delete(buttonName);
 
-        // [INP.3.2] Send to InputManager
-        this.sendInput({
-            source: 'mouse',
-            input: buttonName,
-            state: 'released',
-            position: {
-                x: this.scene.pointerX,
-                y: this.scene.pointerY
-            },
-            originalEvent: event
-        });
+        // [INP.3.8] Send appropriate event to InputManager
+        if (isDoubleClick) {
+            // Send double-click event
+            this.sendInput({
+                source: 'mouse',
+                input: buttonName + 'Double',
+                state: 'double-clicked',
+                position: {
+                    x: this.scene.pointerX,
+                    y: this.scene.pointerY
+                },
+                hitInfo: pickInfo ? {
+                    hit: pickInfo.hit,
+                    pickedMesh: pickInfo.pickedMesh,
+                    pickedPoint: pickInfo.pickedPoint,
+                    distance: pickInfo.distance
+                } : null,
+                originalEvent: event
+            });
+        } else if (wasClick) {
+            // Send single click event (released after click, not drag)
+            this.sendInput({
+                source: 'mouse',
+                input: buttonName,
+                state: 'clicked',
+                position: {
+                    x: this.scene.pointerX,
+                    y: this.scene.pointerY
+                },
+                duration: clickDuration,
+                hitInfo: pickInfo ? {
+                    hit: pickInfo.hit,
+                    pickedMesh: pickInfo.pickedMesh,
+                    pickedPoint: pickInfo.pickedPoint,
+                    distance: pickInfo.distance,
+                    faceId: pickInfo.faceId,
+                    normal: pickInfo.getNormal ? pickInfo.getNormal() : null
+                } : null,
+                originalEvent: event
+            });
+        } else {
+            // Send drag end event (released after dragging)
+            this.sendInput({
+                source: 'mouse',
+                input: buttonName,
+                state: 'released',
+                position: {
+                    x: this.scene.pointerX,
+                    y: this.scene.pointerY
+                },
+                duration: clickDuration,
+                wasDragging: true,
+                originalEvent: event
+            });
+        }
+
+        // [INP.3.9] Reset drag state
+        this.clickStartPosition = null;
+        this.clickStartTime = null;
+        this.isDragging = false;
     }
 
     /**
@@ -212,29 +339,48 @@ export default class MouseSource extends InputSource {
         this.deltaPosition.x = event.movementX;
         this.deltaPosition.y = event.movementY;
 
-        // [INP.3.3] Only send MouseMove if a button is held down
-        // This enables click+drag behavior instead of free mouse look
-        if (this.buttons.size === 0) {
-            // No buttons pressed, don't send movement
+        // [INP.3.3] Check if we should detect dragging
+        if (this.clickStartPosition && !this.isDragging) {
+            // Button is held but we haven't started dragging yet
+            // Calculate distance from click start position
+            const dx = this.position.x - this.clickStartPosition.x;
+            const dy = this.position.y - this.clickStartPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // [INP.3.3.1] If moved beyond threshold, it's a drag (not a click)
+            if (distance >= this.dragThreshold) {
+                this.isDragging = true;
+
+                // Clear hold timer since user is dragging
+                if (this.holdTimer) {
+                    clearTimeout(this.holdTimer);
+                    this.holdTimer = null;
+                }
+
+                console.log('[INP.3] Drag started - distance:', distance.toFixed(1), 'px');
+            } else {
+                // Still within threshold - might be hand shake, ignore movement
+                return;
+            }
+        }
+
+        // [INP.3.4] Only send MouseMove if dragging or no button held
+        if (this.buttons.size === 0 && !this.isDragging) {
+            // No buttons pressed and not dragging, don't send movement
             return;
         }
 
-        // [INP.3.4] Determine which button is held
-        // RightClick = camera rotation (standard 3D editor behavior)
-        // LeftClick = selection/drag
-        // MiddleClick = pan
+        // [INP.3.5] Determine which button is held (if any)
         let heldButton = null;
-        if (this.buttons.has('RightClick')) {
+        if (this.buttons.has('LeftClick')) {
+            heldButton = 'LeftClick';
+        } else if (this.buttons.has('RightClick')) {
             heldButton = 'RightClick';
         } else if (this.buttons.has('MiddleClick')) {
             heldButton = 'MiddleClick';
-        } else if (this.buttons.has('LeftClick')) {
-            heldButton = 'LeftClick';
         }
 
-        console.log('[INP.3] MouseMove with button held:', heldButton, '| Delta:', this.deltaPosition);
-
-        // [INP.3.5] Send to InputManager with button info
+        // [INP.3.6] Send MouseMove event to InputManager
         this.sendInput({
             source: 'mouse',
             input: 'MouseMove',
@@ -242,7 +388,8 @@ export default class MouseSource extends InputSource {
             position: { ...this.position },
             delta: { ...this.deltaPosition },
             previousPosition: previousPosition,
-            heldButton: heldButton,  // Which button is held during movement
+            heldButton: heldButton,      // Which button is held during movement
+            isDragging: this.isDragging,  // Is this a drag operation?
             originalEvent: event
         });
     }

@@ -72,11 +72,13 @@ export default class EditModeContext extends InputContext {
             { input: 'ShiftLeft', action: 'moveDown' },
             { input: 'ShiftRight', action: 'moveDown' },
 
-            // Mouse look (RIGHT-CLICK + DRAG)
+            // Mouse look (LEFT-CLICK + DRAG)
+            // User feedback: Simple and intuitive - left-click+drag to rotate camera
+            // Distinguishes from single click (select) via 5px drag threshold
             {
                 input: 'MouseMove',
                 action: 'lookAround',
-                condition: 'rightClickHeld',  // Only when right-click is held
+                condition: 'leftClickHeld',  // Only when left-click is held AND dragging
                 filters: { smoothing: 0.3 }
             },
 
