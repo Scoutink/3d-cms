@@ -88,11 +88,11 @@ class BabylonEngine {
         this.inputManager.registerSource('keyboard', keyboardSource);
 
         // [INP.3.2] Mouse - clicks, movement, wheel, 3D raycasting
-        const mouseSource = new MouseSource(this.inputManager, this.scene);
+        const mouseSource = new MouseSource(this.inputManager, this.scene, this.canvas);
         this.inputManager.registerSource('mouse', mouseSource);
 
         // [INP.3.3] Touch - gestures (tap, swipe, pinch, long-press), multi-touch
-        const touchSource = new TouchSource(this.inputManager, this.scene);
+        const touchSource = new TouchSource(this.inputManager, this.canvas);
         this.inputManager.registerSource('touch', touchSource);
 
         // [INP.2] Register input contexts
