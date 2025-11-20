@@ -191,6 +191,9 @@ export default class MouseSource extends InputSource {
      *
      * Using DOM mousemove instead of Babylon's for smoother tracking.
      *
+     * IMPORTANT: Only sends MouseMove when a mouse button is held.
+     * This prevents unwanted camera rotation when just moving the cursor.
+     *
      * @param {MouseEvent} event - Mouse event
      */
     handleMouseMove(event) {
@@ -203,7 +206,27 @@ export default class MouseSource extends InputSource {
         this.deltaPosition.x = event.movementX;
         this.deltaPosition.y = event.movementY;
 
-        // [INP.3.3] Send to InputManager
+        // [INP.3.3] Only send MouseMove if a button is held down
+        // This enables click+drag behavior instead of free mouse look
+        if (this.buttons.size === 0) {
+            // No buttons pressed, don't send movement
+            return;
+        }
+
+        // [INP.3.4] Determine which button is held
+        // RightClick = camera rotation (standard 3D editor behavior)
+        // LeftClick = selection/drag
+        // MiddleClick = pan
+        let heldButton = null;
+        if (this.buttons.has('RightClick')) {
+            heldButton = 'RightClick';
+        } else if (this.buttons.has('MiddleClick')) {
+            heldButton = 'MiddleClick';
+        } else if (this.buttons.has('LeftClick')) {
+            heldButton = 'LeftClick';
+        }
+
+        // [INP.3.5] Send to InputManager with button info
         this.sendInput({
             source: 'mouse',
             input: 'MouseMove',
@@ -211,6 +234,7 @@ export default class MouseSource extends InputSource {
             position: { ...this.position },
             delta: { ...this.deltaPosition },
             previousPosition: previousPosition,
+            heldButton: heldButton,  // Which button is held during movement
             originalEvent: event
         });
     }

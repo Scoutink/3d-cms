@@ -72,10 +72,11 @@ export default class EditModeContext extends InputContext {
             { input: 'ShiftLeft', action: 'moveDown' },
             { input: 'ShiftRight', action: 'moveDown' },
 
-            // Mouse look
+            // Mouse look (RIGHT-CLICK + DRAG)
             {
                 input: 'MouseMove',
                 action: 'lookAround',
+                condition: 'rightClickHeld',  // Only when right-click is held
                 filters: { smoothing: 0.3 }
             },
 

@@ -189,6 +189,20 @@ export default class InputContext {
                 // No selected objects
                 return !window.selectedObjects || window.selectedObjects.length === 0;
 
+            // Mouse button conditions (for drag operations)
+
+            case 'rightClickHeld':
+                // Right mouse button is held during movement
+                return event.heldButton === 'RightClick';
+
+            case 'leftClickHeld':
+                // Left mouse button is held during movement
+                return event.heldButton === 'LeftClick';
+
+            case 'middleClickHeld':
+                // Middle mouse button is held during movement
+                return event.heldButton === 'MiddleClick';
+
             default:
                 console.warn(`[INP.2] Unknown condition: ${condition}`);
                 return true;
