@@ -398,6 +398,14 @@
             // [LGT] Lighting
             lightingPlugin.usePreset('day');
 
+            // [ENV] Add environment for PBR materials (needed for metallic materials)
+            const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
+                "https://playground.babylonjs.com/textures/environment.dds",
+                scene
+            );
+            scene.environmentTexture = hdrTexture;
+            scene.environmentIntensity = 0.8;
+
             // [SHD] Shadows
             const sunLight = lightingPlugin.getLight('daySun');
             if (sunLight) {
