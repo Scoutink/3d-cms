@@ -609,6 +609,9 @@
                 scene
             );
             camera.setTarget(BABYLON.Vector3.Zero());
+
+            // Get canvas from scene's engine
+            const canvas = scene.getEngine().getRenderingCanvas();
             camera.attachControl(canvas, true);
             camera.speed = 0.5;
             camera.angularSensibility = 3000;
