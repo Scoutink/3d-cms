@@ -91,7 +91,7 @@ export default class InputManager extends EventEmitter {
         };
 
         // [INP.1.7] Debug mode
-        this.debug = false;
+        this.debug = true;  // ENABLED for forensic investigation
 
         // [INP.1.8] Statistics
         this.stats = {
