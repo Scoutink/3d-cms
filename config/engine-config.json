@@ -52,6 +52,18 @@
       "rotationSpeed": 0.1
     }
   },
+  "sky": {
+    "preset": "day",
+    "visible": true,
+    "fog": {
+      "enabled": false,
+      "mode": "linear",
+      "color": "#AAAAAA",
+      "start": 20,
+      "end": 60,
+      "density": 0.01
+    }
+  },
   "lighting": {
     "preset": "day"
   },

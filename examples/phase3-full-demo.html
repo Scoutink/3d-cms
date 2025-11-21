@@ -429,8 +429,9 @@
     <!-- Welcome message -->
     <div class="welcome-message" id="welcomeMessage">
         <h2>🎮 Welcome to Phase 3 Demo!</h2>
-        <p>This demo showcases all 4 advanced plugins working together:</p>
+        <p>This demo showcases all advanced plugins working together:</p>
         <ul>
+            <li><strong>🌤️ SkyPlugin:</strong> Dynamic skyboxes and environment</li>
             <li><strong>📦 AssetPlugin:</strong> Loading models and textures</li>
             <li><strong>🖱️ InteractionPlugin:</strong> Hover, click, drag, select</li>
             <li><strong>🎨 UIPlugin:</strong> HUD, panels, tooltips, buttons</li>
@@ -488,6 +489,17 @@
         <div class="control-group">
             <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
             <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+        </div>
+
+        <!-- [SKY] Sky System -->
+        <h3>🌤️ Sky & Environment</h3>
+        <div class="control-group">
+            <label>Sky Presets</label>
+            <button onclick="setSkyPreset('day')">☀️ Clear Day</button>
+            <button onclick="setSkyPreset('sunset')">🌅 Sunset</button>
+            <button onclick="setSkyPreset('night')">🌙 Night</button>
+            <button onclick="setSkyPreset('cloudy')">☁️ Cloudy</button>
+            <button onclick="setSkyPreset('space')">🌌 Space</button>
         </div>
 
         <!-- [LGT] Lighting -->
@@ -564,6 +576,7 @@
         import LightingPlugin from '../src/plugins/LightingPlugin.js';
         import ShadowPlugin from '../src/plugins/ShadowPlugin.js';
         import MaterialPlugin from '../src/plugins/MaterialPlugin.js';
+        import SkyPlugin from '../src/plugins/SkyPlugin.js';
 
         // [PLG.2] Import Phase 3 plugins
         import AssetPlugin from '../src/plugins/AssetPlugin.js';
@@ -691,6 +704,15 @@
             console.log(`[UI] Edge behavior set to: ${behavior}`);
         };
 
+        // [UI.CONTROLS] Sky Preset
+        window.setSkyPreset = function(preset) {
+            const skyPlugin = window.engine.getPlugin('sky');
+            if (!skyPlugin) return;
+
+            skyPlugin.usePreset(preset);
+            console.log(`[UI] Sky preset: ${preset}`);
+        };
+
         // [UI.CONTROLS] Lighting Preset
         window.setLightingPreset = function(preset) {
             const lightingPlugin = window.engine.getPlugin('lighting');
@@ -754,6 +776,7 @@
                 window.engine.registerPlugin('lighting', new LightingPlugin());
                 window.engine.registerPlugin('shadow', new ShadowPlugin());
                 window.engine.registerPlugin('material', new MaterialPlugin());
+                window.engine.registerPlugin('sky', new SkyPlugin());
 
                 updateLoading(40, 'Registering Phase 3 plugins...');
 
