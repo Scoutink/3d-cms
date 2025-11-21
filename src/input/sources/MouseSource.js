@@ -339,6 +339,9 @@ export default class MouseSource extends InputSource {
      * @param {MouseEvent} event - Mouse event
      */
     handleMouseMove(event) {
+        // [FORENSIC] Log at the VERY START to confirm this function is called
+        console.log(`[FORENSIC-MOUSE-START] handleMouseMove called! | buttons.size: ${this.buttons.size} | clickStartPosition: ${this.clickStartPosition ? 'SET' : 'NULL'} | isDragging: ${this.isDragging}`);
+
         // [INP.3.1] Update position
         const previousPosition = { ...this.position };
         this.position.x = event.clientX;
@@ -378,6 +381,7 @@ export default class MouseSource extends InputSource {
         // [INP.3.4] Only send MouseMove if dragging or no button held
         if (this.buttons.size === 0 && !this.isDragging) {
             // No buttons pressed and not dragging, don't send movement
+            console.log(`[FORENSIC-MOUSE] 🚫 Not sending MouseMove - no buttons pressed and not dragging`);
             return;
         }
 
