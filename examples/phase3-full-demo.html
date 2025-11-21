@@ -455,6 +455,31 @@
     <div class="control-panel">
         <h2>⚙️ Edit Controls</h2>
 
+        <!-- [GIZ] Transform Gizmos -->
+        <h3>🎯 Transform Tools</h3>
+        <div class="control-group">
+            <label>Gizmo Mode (Select object first)</label>
+            <button onclick="setGizmoMode('position')" id="gizmoPositionBtn" class="active">
+                📍 Position (W)
+            </button>
+            <button onclick="setGizmoMode('rotation')" id="gizmoRotationBtn">
+                🔄 Rotation (E)
+            </button>
+            <button onclick="setGizmoMode('scale')" id="gizmoScaleBtn">
+                📏 Scale (R)
+            </button>
+            <button onclick="setGizmoMode('none')" id="gizmoNoneBtn">
+                ❌ No Gizmo
+            </button>
+        </div>
+
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="gizmoSnapping" onchange="toggleGizmoSnapping(this.checked)">
+                Enable Snapping (Shift)
+            </label>
+        </div>
+
         <!-- [GRD] Ground Rotation -->
         <h3>🌍 Ground Rotation</h3>
         <div class="control-group">
@@ -636,6 +661,9 @@
         import UIPlugin from '../src/plugins/UIPlugin.js';
         import PerformancePlugin from '../src/plugins/PerformancePlugin.js';
 
+        // [PLG.3] Import Phase 4 plugins
+        import GizmoPlugin from '../src/plugins/GizmoPlugin.js';
+
         // [DEMO] Global references
         window.engine = null;
         window.scene = null;
@@ -707,6 +735,71 @@
             if (event.key === 'Tab') {
                 event.preventDefault(); // Prevent default tab behavior
                 toggleMode();
+            }
+        });
+
+        // [UI.GIZ] Gizmo Mode Control
+        window.setGizmoMode = function(mode) {
+            const gizmoPlugin = window.gizmoPlugin;
+            if (!gizmoPlugin) {
+                console.warn('[UI.GIZ] GizmoPlugin not initialized yet');
+                return;
+            }
+
+            // Set the gizmo mode
+            gizmoPlugin.setMode(mode);
+
+            // Update button states
+            const buttons = {
+                'position': document.getElementById('gizmoPositionBtn'),
+                'rotation': document.getElementById('gizmoRotationBtn'),
+                'scale': document.getElementById('gizmoScaleBtn'),
+                'none': document.getElementById('gizmoNoneBtn')
+            };
+
+            // Remove active class from all buttons
+            Object.values(buttons).forEach(btn => btn?.classList.remove('active'));
+
+            // Add active class to selected button
+            if (buttons[mode]) {
+                buttons[mode].classList.add('active');
+            }
+
+            console.log(`[UI.GIZ] Gizmo mode: ${mode}`);
+        };
+
+        // [UI.GIZ] Toggle Gizmo Snapping
+        window.toggleGizmoSnapping = function(enabled) {
+            const gizmoPlugin = window.gizmoPlugin;
+            if (!gizmoPlugin) return;
+
+            gizmoPlugin.setSnapping(enabled);
+            console.log(`[UI.GIZ] Gizmo snapping: ${enabled ? 'enabled' : 'disabled'}`);
+        };
+
+        // [UI.GIZ] Keyboard shortcuts for gizmo modes (W/E/R keys)
+        document.addEventListener('keydown', (event) => {
+            // Only in edit mode
+            if (currentMode !== 'edit') return;
+
+            // Prevent if typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    event.preventDefault();
+                    setGizmoMode('position');
+                    break;
+                case 'e':
+                    event.preventDefault();
+                    setGizmoMode('rotation');
+                    break;
+                case 'r':
+                    event.preventDefault();
+                    setGizmoMode('scale');
+                    break;
             }
         });
 
@@ -978,6 +1071,10 @@
                 window.engine.registerPlugin('interaction', window.interactionPlugin);
                 window.engine.registerPlugin('ui', window.uiPlugin);
                 window.engine.registerPlugin('performance', window.performancePlugin);
+
+                // [PLG.4] Register Phase 4 plugins (Transform Gizmos)
+                window.gizmoPlugin = new GizmoPlugin();
+                window.engine.registerPlugin('gizmo', window.gizmoPlugin);
 
                 updateLoading(50, 'Starting engine...');
 

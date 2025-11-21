@@ -102,5 +102,15 @@
         "v": 10
       }
     }
+  },
+  "gizmo": {
+    "enabled": true,
+    "defaultMode": "position",
+    "size": 1.0,
+    "snap": {
+      "enabled": false,
+      "distance": 0.5,
+      "angle": 15
+    }
   }
 }
