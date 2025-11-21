@@ -155,8 +155,12 @@ export default class MouseSource extends InputSource {
         const button = event.button;
         const buttonName = this.getButtonName(button);
 
+        console.log(`[FORENSIC-DOWN] handlePointerDown called! button: ${buttonName} | buttons BEFORE add: ${this.buttons.size}`);
+
         // [INP.3.1] Track button state
         this.buttons.add(buttonName);
+
+        console.log(`[FORENSIC-DOWN] buttons AFTER add: ${this.buttons.size} | contains: ${Array.from(this.buttons).join(', ')}`);
 
         // [INP.3.1.1] Record click start for drag detection
         this.clickStartPosition = {
@@ -165,6 +169,8 @@ export default class MouseSource extends InputSource {
         };
         this.clickStartTime = performance.now();
         this.isDragging = false;
+
+        console.log(`[FORENSIC-DOWN] clickStartPosition SET: (${this.clickStartPosition.x}, ${this.clickStartPosition.y}) | isDragging: ${this.isDragging}`);
 
         // [INP.3.1.2] Start hold timer
         // If button is held for > holdThreshold ms without dragging, it's a "hold"
@@ -293,6 +299,8 @@ export default class MouseSource extends InputSource {
         const button = event.button;
         const buttonName = this.getButtonName(button);
 
+        console.log(`[FORENSIC-UP] handlePointerUp called! button: ${buttonName} | buttons BEFORE delete: ${this.buttons.size} | isDragging: ${this.isDragging}`);
+
         // [INP.3.1] Clear hold timer
         if (this.holdTimer) {
             clearTimeout(this.holdTimer);
@@ -304,6 +312,8 @@ export default class MouseSource extends InputSource {
 
         // [INP.3.3] Remove from button state
         this.buttons.delete(buttonName);
+
+        console.log(`[FORENSIC-UP] buttons AFTER delete: ${this.buttons.size}`);
 
         // [INP.3.4] Send button released event if was dragging
         // Note: Click events are now handled by POINTERPICK, not here
