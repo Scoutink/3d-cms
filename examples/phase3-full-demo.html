@@ -509,11 +509,37 @@
             </div>
         </div>
 
-        <!-- [GRD] Edge Behavior -->
+        <!-- [GRD] Ground Edge Behavior -->
         <h3>🚧 Ground Edge Behavior</h3>
         <div class="control-group">
             <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
             <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+        </div>
+
+        <!-- [IGR] Infinite Terrain -->
+        <h3>♾️ Infinite Terrain</h3>
+        <div class="control-group">
+            <label>Terrain Mode</label>
+            <button onclick="toggleInfiniteTerrain()" id="terrainModeBtn">🌍 Enable Infinite Terrain</button>
+        </div>
+
+        <div class="control-group" id="infiniteTerrainControls" style="display: none;">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>View Distance</label>
+                    <span class="value-display" id="viewDistance">3 chunks</span>
+                </div>
+                <input type="range" id="viewDistanceSlider" min="1" max="5" value="3"
+                       oninput="updateViewDistance(this.value)">
+            </div>
+
+            <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="heightVariationCheck" onchange="toggleHeightVariation(this.checked)"
+                           style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+                    <span>🏔️ Enable Height Variation (Hills)</span>
+                </label>
+            </div>
         </div>
 
         <!-- [SKY] Sky System -->
@@ -598,6 +624,7 @@
 
         // [PLG.1] Import Phase 1-2 plugins
         import GroundPlugin from '../src/plugins/GroundPlugin.js';
+        import InfiniteGroundPlugin from '../src/plugins/InfiniteGroundPlugin.js';
         import LightingPlugin from '../src/plugins/LightingPlugin.js';
         import ShadowPlugin from '../src/plugins/ShadowPlugin.js';
         import MaterialPlugin from '../src/plugins/MaterialPlugin.js';
@@ -614,6 +641,8 @@
         window.scene = null;
         window.demoObjects = [];
         window.selectedObjects = [];
+        window.infiniteTerrainEnabled = false;
+        window.infiniteGroundPlugin = null;
 
         // [DEMO] Start demo
         window.startDemo = function() {
@@ -731,22 +760,136 @@
 
         // [UI.CONTROLS] Ground Texture Preset
         window.setGroundTexture = function(presetName) {
-            const groundPlugin = window.engine.getPlugin('ground');
-            if (!groundPlugin) return;
-
-            groundPlugin.useTexturePreset(presetName);
-            console.log(`[UI] Ground texture: ${presetName}`);
+            // Apply to whichever terrain system is active
+            if (window.infiniteTerrainEnabled && window.infiniteGroundPlugin) {
+                window.infiniteGroundPlugin.useTexturePreset(presetName);
+                console.log(`[UI] Infinite terrain texture: ${presetName}`);
+            } else {
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.useTexturePreset(presetName);
+                    console.log(`[UI] Ground texture: ${presetName}`);
+                }
+            }
         };
 
         // [UI.CONTROLS] Texture Tiling
         window.updateTextureTiling = function(value) {
-            const groundPlugin = window.engine.getPlugin('ground');
-            if (!groundPlugin) return;
-
             const tiling = parseFloat(value);
-            groundPlugin.setTextureTiling(tiling, tiling);
-
             document.getElementById('textureTiling').textContent = tiling.toFixed(0) + 'x';
+
+            // Apply to whichever terrain system is active
+            if (window.infiniteTerrainEnabled && window.infiniteGroundPlugin) {
+                window.infiniteGroundPlugin.setTextureTiling(tiling, tiling);
+            } else {
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.setTextureTiling(tiling, tiling);
+                }
+            }
+        };
+
+        // [UI.CONTROLS] Toggle Infinite Terrain
+        window.toggleInfiniteTerrain = function() {
+            if (!window.engine || !window.scene) return;
+
+            const btn = document.getElementById('terrainModeBtn');
+            const controls = document.getElementById('infiniteTerrainControls');
+
+            if (!window.infiniteTerrainEnabled) {
+                // Enable infinite terrain
+                console.log('[UI] Enabling infinite terrain...');
+
+                // Dispose finite ground
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin && groundPlugin.ground) {
+                    groundPlugin.ground.dispose();
+                }
+
+                // Create and register infinite ground plugin
+                window.infiniteGroundPlugin = new InfiniteGroundPlugin();
+                window.engine.registerPlugin('infiniteGround', window.infiniteGroundPlugin);
+
+                // Initialize and start
+                const config = {
+                    infiniteGround: {
+                        chunkSize: 50,
+                        viewDistance: 3,
+                        height: 0,
+                        heightVariation: false,
+                        subdivisions: 10,
+                        material: {
+                            diffuse: 'https://playground.babylonjs.com/textures/grass.png',
+                            normal: 'https://playground.babylonjs.com/textures/grassn.png',
+                            tiling: { u: 10, v: 10 }
+                        }
+                    }
+                };
+                window.infiniteGroundPlugin.init(window.scene, window.engine.events, config);
+                window.infiniteGroundPlugin.start();
+
+                // Update UI
+                btn.textContent = '🟢 Disable Infinite Terrain';
+                btn.classList.add('active');
+                controls.style.display = 'block';
+                window.infiniteTerrainEnabled = true;
+
+                console.log('[UI] Infinite terrain enabled');
+            } else {
+                // Disable infinite terrain
+                console.log('[UI] Disabling infinite terrain...');
+
+                // Dispose infinite ground
+                if (window.infiniteGroundPlugin) {
+                    window.infiniteGroundPlugin.dispose();
+                    window.engine.plugins.delete('infiniteGround');
+                    window.infiniteGroundPlugin = null;
+                }
+
+                // Recreate finite ground
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.createGround('plane');
+                }
+
+                // Update UI
+                btn.textContent = '🌍 Enable Infinite Terrain';
+                btn.classList.remove('active');
+                controls.style.display = 'none';
+                window.infiniteTerrainEnabled = false;
+
+                console.log('[UI] Infinite terrain disabled');
+            }
+        };
+
+        // [UI.CONTROLS] Update View Distance
+        window.updateViewDistance = function(value) {
+            if (!window.infiniteGroundPlugin) return;
+
+            const distance = parseInt(value);
+            window.infiniteGroundPlugin.setViewDistance(distance);
+
+            document.getElementById('viewDistance').textContent = distance + ' chunks';
+            console.log(`[UI] View distance: ${distance} chunks`);
+        };
+
+        // [UI.CONTROLS] Toggle Height Variation
+        window.toggleHeightVariation = function(enabled) {
+            if (!window.infiniteGroundPlugin) return;
+
+            window.infiniteGroundPlugin.setHeightVariation(enabled, 5);
+            console.log(`[UI] Height variation: ${enabled ? 'enabled' : 'disabled'}`);
+
+            // Force chunk reload to apply height changes
+            if (window.infiniteGroundPlugin.chunks) {
+                // Dispose all chunks and reload
+                window.infiniteGroundPlugin.chunks.forEach((chunk, key) => {
+                    const [x, z] = key.split(',').map(Number);
+                    window.infiniteGroundPlugin.unloadChunk(x, z);
+                });
+                window.infiniteGroundPlugin.chunks.clear();
+                window.infiniteGroundPlugin.updateChunks(true);
+            }
         };
 
         // [UI.CONTROLS] Sky Preset

@@ -83,5 +83,24 @@
         "v": 40
       }
     }
+  },
+  "infiniteGround": {
+    "enabled": false,
+    "chunkSize": 50,
+    "viewDistance": 3,
+    "height": 0,
+    "heightVariation": false,
+    "heightScale": 5,
+    "subdivisions": 10,
+    "shadows": true,
+    "collision": true,
+    "material": {
+      "diffuse": "https://playground.babylonjs.com/textures/grass.png",
+      "normal": "https://playground.babylonjs.com/textures/grassn.png",
+      "tiling": {
+        "u": 10,
+        "v": 10
+      }
+    }
   }
 }
