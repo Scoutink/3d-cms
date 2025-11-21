@@ -201,6 +201,211 @@
         .toggle-instructions.visible {
             display: block;
         }
+
+        /* [UI.MODE] Edit/View Mode Toggle */
+        .mode-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-toggle button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: scale(1.05);
+        }
+
+        /* [UI.MODE] Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 320px;
+            max-width: 350px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 12px;
+            text-align: center;
+        }
+
+        .control-panel h3 {
+            margin: 25px 0 12px 0;
+            font-size: 13px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        .control-group button {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .control-group button:hover {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .control-group button:active {
+            transform: translateY(0);
+        }
+
+        .control-group button.active {
+            background: linear-gradient(135deg, #81C784, #66BB6A);
+            box-shadow: 0 0 16px rgba(129, 199, 132, 0.6);
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.2);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4CAF50;
+            font-weight: bold;
+            float: right;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .slider-container {
+            clear: both;
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* Material Preview Grid */
+        .material-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .material-grid button {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        /* Scrollbar for control panel */
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: #66BB6A;
+        }
+
+        /* [UI.MODE] View mode - hide edit controls */
+        body.view-mode .control-panel {
+            display: none;
+        }
+
+        body.view-mode .instructions {
+            display: none;
+        }
     </style>
     <!-- Babylon.js -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -232,9 +437,99 @@
             <li><strong>⚡ PerformancePlugin:</strong> Real-time optimization</li>
         </ul>
         <p style="margin-top: 15px; font-size: 14px; color: #999;">
-            <strong>Controls:</strong> WASD to move, Mouse to look, Click objects to interact
+            <strong>Controls:</strong> WASD to move, Mouse to look, Click objects to interact<br>
+            <strong>Tab Key:</strong> Toggle Edit/View Mode
         </p>
         <button class="welcome-button" onclick="startDemo()">🚀 Start Demo</button>
+    </div>
+
+    <!-- [UI.MODE] Mode Toggle Button -->
+    <div class="mode-toggle">
+        <button id="modeToggleBtn" onclick="toggleMode()">
+            👁️ Switch to View Mode (Tab)
+        </button>
+    </div>
+
+    <!-- [UI.MODE] Control Panel (Edit Mode Only) -->
+    <div class="control-panel">
+        <h2>⚙️ Edit Controls</h2>
+
+        <!-- [GRD] Ground Rotation -->
+        <h3>🌍 Ground Rotation</h3>
+        <div class="control-group">
+            <label>Quick Presets</label>
+            <button onclick="setGroundRotationPreset('horizontal')">➡️ Horizontal</button>
+            <button onclick="setGroundRotationPreset('vertical')">⬆️ Vertical</button>
+            <button onclick="setGroundRotationPreset('diagonal45')">↗️ Diagonal 45°</button>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>X-Axis Tilt</label>
+                    <span class="value-display" id="rotX">0°</span>
+                </div>
+                <input type="range" id="rotXSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Z-Axis Tilt</label>
+                    <span class="value-display" id="rotZ">0°</span>
+                </div>
+                <input type="range" id="rotZSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+        </div>
+
+        <!-- [GRD] Edge Behavior -->
+        <h3>🚧 Ground Edge Behavior</h3>
+        <div class="control-group">
+            <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
+            <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+        </div>
+
+        <!-- [LGT] Lighting -->
+        <h3>💡 Lighting Presets</h3>
+        <div class="control-group">
+            <button onclick="setLightingPreset('day')">☀️ Day</button>
+            <button onclick="setLightingPreset('night')">🌙 Night</button>
+            <button onclick="setLightingPreset('sunset')">🌅 Sunset</button>
+            <button onclick="setLightingPreset('indoor')">🏠 Indoor</button>
+            <button onclick="setLightingPreset('dramatic')">🎭 Dramatic</button>
+            <button onclick="setLightingPreset('studio')">🎬 Studio</button>
+        </div>
+
+        <!-- [SHD] Shadows -->
+        <h3>🌑 Shadow System</h3>
+        <div class="control-group">
+            <label>Quality Level</label>
+            <button onclick="setShadowQuality('low')">⚡ Low</button>
+            <button onclick="setShadowQuality('medium')">⚖️ Medium</button>
+            <button onclick="setShadowQuality('high')">💎 High</button>
+            <button onclick="setShadowQuality('ultra')">🔮 Ultra</button>
+        </div>
+
+        <!-- [MAT] Materials -->
+        <h3>🎨 Material Gallery</h3>
+        <div class="control-group">
+            <label>Click object then apply material</label>
+            <div class="material-grid">
+                <button onclick="applyMaterial('wood')">🪵 Wood</button>
+                <button onclick="applyMaterial('metal')">⚙️ Metal</button>
+                <button onclick="applyMaterial('gold')">🥇 Gold</button>
+                <button onclick="applyMaterial('silver')">⚪ Silver</button>
+                <button onclick="applyMaterial('copper')">🟠 Copper</button>
+                <button onclick="applyMaterial('glass')">💎 Glass</button>
+                <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
+                <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
+                <button onclick="applyMaterial('stone')">🪨 Stone</button>
+                <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
+                <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
+                <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
+            </div>
+        </div>
     </div>
 
     <!-- Instructions -->
@@ -242,13 +537,18 @@
         <h3>📋 Controls</h3>
         <ul>
             <li><strong>WASD/Arrows:</strong> Move camera</li>
-            <li><strong>Mouse:</strong> Look around</li>
+            <li><strong>Mouse Drag:</strong> Rotate camera</li>
+            <li><strong>Tab:</strong> Toggle Edit/View Mode</li>
             <li><strong>Hover:</strong> Objects highlight</li>
             <li><strong>Click:</strong> Select object</li>
             <li><strong>Drag:</strong> Move objects</li>
             <li><strong>Ctrl+Click:</strong> Multi-select</li>
-            <li><strong>Right-click:</strong> Context menu (console)</li>
+            <li><strong>Right-click:</strong> Context menu</li>
         </ul>
+        <p style="margin-top: 10px; font-size: 11px; color: #999; line-height: 1.4;">
+            <strong>Edit Mode:</strong> Full control panel visible<br>
+            <strong>View Mode:</strong> Clean viewing experience
+        </p>
     </div>
 
     <!-- Toggle button -->
@@ -295,6 +595,140 @@
                 instructions.style.display = 'none';
                 btn.classList.add('visible');
             }
+        };
+
+        // [UI.MODE] Edit/View Mode Toggle
+        // USER REQUIREMENT: Toggle between editing and clean viewing
+        let currentMode = 'edit'; // Default to edit mode
+        window.toggleMode = function() {
+            const body = document.body;
+            const btn = document.getElementById('modeToggleBtn');
+            const inputManager = window.inputManager;
+
+            if (currentMode === 'edit') {
+                // Switch to view mode
+                body.classList.add('view-mode');
+                btn.textContent = '📝 Switch to Edit Mode (Tab)';
+                currentMode = 'view';
+
+                // Connect to InputManager context switch
+                if (inputManager) {
+                    inputManager.setContext('view');
+                }
+
+                console.log('[UI] Switched to View Mode - Clean experience');
+            } else {
+                // Switch to edit mode
+                body.classList.remove('view-mode');
+                btn.textContent = '👁️ Switch to View Mode (Tab)';
+                currentMode = 'edit';
+
+                // Connect to InputManager context switch
+                if (inputManager) {
+                    inputManager.setContext('edit');
+                }
+
+                console.log('[UI] Switched to Edit Mode - All controls visible');
+            }
+
+            // Save preference to localStorage
+            localStorage.setItem('3dcms_mode', currentMode);
+        };
+
+        // [UI.MODE] Tab key listener for mode toggle
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                event.preventDefault(); // Prevent default tab behavior
+                toggleMode();
+            }
+        });
+
+        // [UI.CONTROLS] Ground Rotation Preset
+        window.setGroundRotationPreset = function(preset) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            const presets = {
+                horizontal: { x: 0, y: 0, z: 0 },
+                vertical: { x: Math.PI / 2, y: 0, z: 0 },
+                diagonal45: { x: Math.PI / 4, y: 0, z: Math.PI / 4 }
+            };
+
+            const rotation = presets[preset];
+            if (rotation) {
+                groundPlugin.setRotation(rotation);
+
+                // Update sliders
+                document.getElementById('rotXSlider').value = Math.round(rotation.x * 180 / Math.PI);
+                document.getElementById('rotZSlider').value = Math.round(rotation.z * 180 / Math.PI);
+                document.getElementById('rotX').textContent = Math.round(rotation.x * 180 / Math.PI) + '°';
+                document.getElementById('rotZ').textContent = Math.round(rotation.z * 180 / Math.PI) + '°';
+
+                console.log(`[UI] Ground rotation set to ${preset}`);
+            }
+        };
+
+        // [UI.CONTROLS] Ground Rotation from sliders
+        window.updateGroundRotation = function() {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            const rotX = parseFloat(document.getElementById('rotXSlider').value) * Math.PI / 180;
+            const rotZ = parseFloat(document.getElementById('rotZSlider').value) * Math.PI / 180;
+
+            groundPlugin.setRotation({ x: rotX, y: 0, z: rotZ });
+
+            document.getElementById('rotX').textContent = Math.round(rotX * 180 / Math.PI) + '°';
+            document.getElementById('rotZ').textContent = Math.round(rotZ * 180 / Math.PI) + '°';
+        };
+
+        // [UI.CONTROLS] Edge Behavior
+        window.setEdgeBehavior = function(behavior) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            groundPlugin.setEdgeBehavior(behavior);
+            console.log(`[UI] Edge behavior set to: ${behavior}`);
+        };
+
+        // [UI.CONTROLS] Lighting Preset
+        window.setLightingPreset = function(preset) {
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            if (!lightingPlugin) return;
+
+            lightingPlugin.usePreset(preset);
+            console.log(`[UI] Lighting preset: ${preset}`);
+        };
+
+        // [UI.CONTROLS] Shadow Quality
+        window.setShadowQuality = function(quality) {
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            if (!shadowPlugin) return;
+
+            shadowPlugin.useQualityPreset(quality);
+            console.log(`[UI] Shadow quality: ${quality}`);
+        };
+
+        // [UI.CONTROLS] Apply Material
+        window.applyMaterial = function(presetName) {
+            const materialPlugin = window.engine.getPlugin('material');
+            if (!materialPlugin) return;
+
+            // Get selected objects
+            const selectedObjects = window.interactionPlugin.getSelectedMeshes();
+
+            if (selectedObjects.length === 0) {
+                console.warn('[UI] No object selected. Click an object first!');
+                return;
+            }
+
+            // Apply material to all selected objects
+            const material = materialPlugin.usePreset(presetName);
+            selectedObjects.forEach(mesh => {
+                materialPlugin.applyMaterial(mesh, material);
+            });
+
+            console.log(`[UI] Applied ${presetName} to ${selectedObjects.length} object(s)`);
         };
 
         // [DEMO] Initialize
@@ -495,7 +929,8 @@
             // InputManager no longer handles camera controls - Babylon does that now
             const inputManager = window.engine.getInputManager();
 
-            // Store camera reference for action handlers
+            // Store InputManager and camera references globally
+            window.inputManager = inputManager;
             window.camera = camera;
 
             console.log('[HYBRID] Babylon handles camera controls, InputManager handles clicks');
