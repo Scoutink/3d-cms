@@ -573,24 +573,21 @@
                         <input type="number"
                                class="property-input"
                                id="propPosX"
-                               step="0.1"
-                               onchange="updateObjectProperty('position', 'x', this.value)">
+                               step="0.1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Y</span>
                         <input type="number"
                                class="property-input"
                                id="propPosY"
-                               step="0.1"
-                               onchange="updateObjectProperty('position', 'y', this.value)">
+                               step="0.1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Z</span>
                         <input type="number"
                                class="property-input"
                                id="propPosZ"
-                               step="0.1"
-                               onchange="updateObjectProperty('position', 'z', this.value)">
+                               step="0.1">
                     </div>
                 </div>
             </div>
@@ -604,24 +601,21 @@
                         <input type="number"
                                class="property-input"
                                id="propRotX"
-                               step="1"
-                               onchange="updateObjectProperty('rotation', 'x', this.value)">
+                               step="1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Y</span>
                         <input type="number"
                                class="property-input"
                                id="propRotY"
-                               step="1"
-                               onchange="updateObjectProperty('rotation', 'y', this.value)">
+                               step="1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Z</span>
                         <input type="number"
                                class="property-input"
                                id="propRotZ"
-                               step="1"
-                               onchange="updateObjectProperty('rotation', 'z', this.value)">
+                               step="1">
                     </div>
                 </div>
                 <div class="property-hint">Values in degrees</div>
@@ -636,24 +630,21 @@
                         <input type="number"
                                class="property-input"
                                id="propScaleX"
-                               step="0.1"
-                               onchange="updateObjectProperty('scale', 'x', this.value)">
+                               step="0.1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Y</span>
                         <input type="number"
                                class="property-input"
                                id="propScaleY"
-                               step="0.1"
-                               onchange="updateObjectProperty('scale', 'y', this.value)">
+                               step="0.1">
                     </div>
                     <div class="property-input-group">
                         <span class="property-label">Z</span>
                         <input type="number"
                                class="property-input"
                                id="propScaleZ"
-                               step="0.1"
-                               onchange="updateObjectProperty('scale', 'z', this.value)">
+                               step="0.1">
                     </div>
                 </div>
             </div>
@@ -891,6 +882,7 @@
 
         // [PLG.3] Import Phase 4 plugins
         import GizmoPlugin from '../src/plugins/GizmoPlugin.js';
+        import PropertiesPlugin from '../src/plugins/PropertiesPlugin.js';
 
         // [DEMO] Global references
         window.engine = null;
@@ -1013,95 +1005,8 @@
             }
         });
 
-        // [UI.PROPS] Properties Panel Management
-        window.selectedObject = null; // Currently selected object
-
-        // Show Properties Panel
-        window.showPropertiesPanel = function(mesh) {
-            if (!mesh) return;
-
-            // Don't show for ground, skybox, or terrain chunks
-            if (mesh.name === 'ground' || mesh.name === 'skybox' || mesh.name.startsWith('chunk_')) {
-                return;
-            }
-
-            window.selectedObject = mesh;
-
-            const panel = document.getElementById('propertiesPanel');
-            panel.classList.add('visible');
-
-            // Update panel with object properties
-            updatePropertiesPanel(mesh);
-
-            console.log(`[UI.PROPS] Properties panel opened for: ${mesh.name}`);
-        };
-
-        // Hide Properties Panel
-        window.hidePropertiesPanel = function() {
-            const panel = document.getElementById('propertiesPanel');
-            panel.classList.remove('visible');
-            window.selectedObject = null;
-
-            console.log('[UI.PROPS] Properties panel closed');
-        };
-
-        // Update Properties Panel with object values
-        window.updatePropertiesPanel = function(mesh) {
-            if (!mesh) return;
-
-            // Object name
-            document.getElementById('propObjectName').value = mesh.name;
-
-            // Position
-            document.getElementById('propPosX').value = mesh.position.x.toFixed(2);
-            document.getElementById('propPosY').value = mesh.position.y.toFixed(2);
-            document.getElementById('propPosZ').value = mesh.position.z.toFixed(2);
-
-            // Rotation (convert radians to degrees)
-            document.getElementById('propRotX').value = (mesh.rotation.x * 180 / Math.PI).toFixed(0);
-            document.getElementById('propRotY').value = (mesh.rotation.y * 180 / Math.PI).toFixed(0);
-            document.getElementById('propRotZ').value = (mesh.rotation.z * 180 / Math.PI).toFixed(0);
-
-            // Scale
-            document.getElementById('propScaleX').value = mesh.scaling.x.toFixed(2);
-            document.getElementById('propScaleY').value = mesh.scaling.y.toFixed(2);
-            document.getElementById('propScaleZ').value = mesh.scaling.z.toFixed(2);
-        };
-
-        // Update object property from panel input
-        window.updateObjectProperty = function(type, axis, value) {
-            if (!window.selectedObject) return;
-
-            const mesh = window.selectedObject;
-            const numValue = parseFloat(value);
-
-            switch (type) {
-                case 'position':
-                    mesh.position[axis] = numValue;
-                    break;
-                case 'rotation':
-                    // Convert degrees to radians
-                    mesh.rotation[axis] = numValue * Math.PI / 180;
-                    break;
-                case 'scale':
-                    mesh.scaling[axis] = numValue;
-                    break;
-            }
-
-            console.log(`[UI.PROPS] Updated ${mesh.name} ${type}.${axis} = ${numValue}`);
-        };
-
-        // Real-time update: Sync panel when gizmo changes object
-        window.syncPropertiesPanelRealtime = function() {
-            if (window.selectedObject && document.getElementById('propertiesPanel').classList.contains('visible')) {
-                updatePropertiesPanel(window.selectedObject);
-            }
-        };
-
-        // Periodic sync (while dragging with gizmo)
-        setInterval(() => {
-            syncPropertiesPanelRealtime();
-        }, 100); // Update 10 times per second
+        // [UI.PROPS] Properties Panel is now handled by PropertiesPlugin.js
+        // (No inline code needed here - plugin handles everything)
 
         // [UI.CONTROLS] Ground Rotation Preset
         window.setGroundRotationPreset = function(preset) {
@@ -1372,9 +1277,12 @@
                 window.engine.registerPlugin('ui', window.uiPlugin);
                 window.engine.registerPlugin('performance', window.performancePlugin);
 
-                // [PLG.4] Register Phase 4 plugins (Transform Gizmos)
+                // [PLG.4] Register Phase 4 plugins (Transform Gizmos & Properties)
                 window.gizmoPlugin = new GizmoPlugin();
                 window.engine.registerPlugin('gizmo', window.gizmoPlugin);
+
+                window.propertiesPlugin = new PropertiesPlugin();
+                window.engine.registerPlugin('properties', window.propertiesPlugin);
 
                 updateLoading(50, 'Starting engine...');
 
@@ -1382,6 +1290,10 @@
                 await window.engine.start();
 
                 window.scene = window.engine.scene;
+
+                // Store plugin references in scene metadata for cross-plugin access
+                if (!window.scene.metadata) window.scene.metadata = {};
+                window.scene.metadata.interactionPlugin = window.interactionPlugin;
 
                 updateLoading(60, 'Setting up scene...');
 
@@ -1832,17 +1744,12 @@
             // Interaction events
             events.on('interaction:selected', (data) => {
                 console.log('[DEMO] Selected:', data.name);
-                // Show Properties Panel
-                showPropertiesPanel(data.mesh);
+                // Properties Panel is automatically shown by PropertiesPlugin
             });
 
             events.on('interaction:deselected', (data) => {
                 console.log('[DEMO] Deselected:', data.name);
-                // Hide Properties Panel if no objects selected
-                const interactionPlugin = window.interactionPlugin;
-                if (interactionPlugin && interactionPlugin.getSelected().length === 0) {
-                    hidePropertiesPanel();
-                }
+                // Properties Panel is automatically hidden by PropertiesPlugin
             });
 
             events.on('interaction:drag:start', (data) => {
@@ -1855,7 +1762,7 @@
 
             // Gizmo events (for Properties Panel sync)
             events.on('gizmo:drag:end', () => {
-                syncPropertiesPanelRealtime();
+                // Properties Panel is automatically synced by PropertiesPlugin
             });
 
             // Performance events

@@ -112,5 +112,9 @@
       "distance": 0.5,
       "angle": 15
     }
+  },
+  "properties": {
+    "enabled": true,
+    "updateInterval": 100
   }
 }
