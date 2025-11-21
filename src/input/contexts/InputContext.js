@@ -200,22 +200,16 @@ export default class InputContext {
 
             case 'rightClickHeld':
                 // Right mouse button is held during movement AND dragging has started
-                const rightResult = event.heldButton === 'RightClick' && event.isDragging === true;
-                console.log(`[FORENSIC-CONTEXT] rightClickHeld check: ${rightResult} | heldButton: ${event.heldButton} | isDragging: ${event.isDragging}`);
-                return rightResult;
+                return event.heldButton === 'RightClick' && event.isDragging === true;
 
             case 'leftClickHeld':
                 // Left mouse button is held during movement AND dragging has started
                 // This ensures camera only rotates AFTER the 5px drag threshold is exceeded
-                const leftResult = event.heldButton === 'LeftClick' && event.isDragging === true;
-                console.log(`[FORENSIC-CONTEXT] leftClickHeld check: ${leftResult} | heldButton: ${event.heldButton} | isDragging: ${event.isDragging}`);
-                return leftResult;
+                return event.heldButton === 'LeftClick' && event.isDragging === true;
 
             case 'middleClickHeld':
                 // Middle mouse button is held during movement AND dragging has started
-                const middleResult = event.heldButton === 'MiddleClick' && event.isDragging === true;
-                console.log(`[FORENSIC-CONTEXT] middleClickHeld check: ${middleResult} | heldButton: ${event.heldButton} | isDragging: ${event.isDragging}`);
-                return middleResult;
+                return event.heldButton === 'MiddleClick' && event.isDragging === true;
 
             default:
                 console.warn(`[INP.2] Unknown condition: ${condition}`);

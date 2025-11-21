@@ -155,12 +155,8 @@ export default class MouseSource extends InputSource {
         const button = event.button;
         const buttonName = this.getButtonName(button);
 
-        console.log(`[FORENSIC-DOWN] handlePointerDown called! button: ${buttonName} | buttons BEFORE add: ${this.buttons.size}`);
-
         // [INP.3.1] Track button state
         this.buttons.add(buttonName);
-
-        console.log(`[FORENSIC-DOWN] buttons AFTER add: ${this.buttons.size} | contains: ${Array.from(this.buttons).join(', ')}`);
 
         // [INP.3.1.1] Record click start for drag detection
         this.clickStartPosition = {
@@ -169,8 +165,6 @@ export default class MouseSource extends InputSource {
         };
         this.clickStartTime = performance.now();
         this.isDragging = false;
-
-        console.log(`[FORENSIC-DOWN] clickStartPosition SET: (${this.clickStartPosition.x}, ${this.clickStartPosition.y}) | isDragging: ${this.isDragging}`);
 
         // [INP.3.1.2] Start hold timer
         // If button is held for > holdThreshold ms without dragging, it's a "hold"
@@ -299,8 +293,6 @@ export default class MouseSource extends InputSource {
         const button = event.button;
         const buttonName = this.getButtonName(button);
 
-        console.log(`[FORENSIC-UP] handlePointerUp called! button: ${buttonName} | buttons BEFORE delete: ${this.buttons.size} | isDragging: ${this.isDragging}`);
-
         // [INP.3.1] Clear hold timer
         if (this.holdTimer) {
             clearTimeout(this.holdTimer);
@@ -312,8 +304,6 @@ export default class MouseSource extends InputSource {
 
         // [INP.3.3] Remove from button state
         this.buttons.delete(buttonName);
-
-        console.log(`[FORENSIC-UP] buttons AFTER delete: ${this.buttons.size}`);
 
         // [INP.3.4] Send button released event if was dragging
         // Note: Click events are now handled by POINTERPICK, not here
@@ -349,9 +339,6 @@ export default class MouseSource extends InputSource {
      * @param {MouseEvent} event - Mouse event
      */
     handleMouseMove(event) {
-        // [FORENSIC] Log at the VERY START to confirm this function is called
-        console.log(`[FORENSIC-MOUSE-START] handleMouseMove called! | buttons.size: ${this.buttons.size} | clickStartPosition: ${this.clickStartPosition ? 'SET' : 'NULL'} | isDragging: ${this.isDragging}`);
-
         // [INP.3.1] Update position
         const previousPosition = { ...this.position };
         this.position.x = event.clientX;
@@ -369,12 +356,9 @@ export default class MouseSource extends InputSource {
             const dy = this.position.y - this.clickStartPosition.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            console.log(`[FORENSIC-MOUSE] Movement detected | Distance from start: ${distance.toFixed(2)}px | Threshold: ${this.dragThreshold}px | isDragging: ${this.isDragging}`);
-
             // [INP.3.3.1] If moved beyond threshold, it's a drag (not a click)
             if (distance >= this.dragThreshold) {
                 this.isDragging = true;
-                console.log(`[FORENSIC-MOUSE] 🚨 DRAG STARTED - distance ${distance.toFixed(2)}px exceeded threshold ${this.dragThreshold}px`);
 
                 // Clear hold timer since user is dragging
                 if (this.holdTimer) {
@@ -383,7 +367,6 @@ export default class MouseSource extends InputSource {
                 }
             } else {
                 // Still within threshold - might be hand shake, ignore movement
-                console.log(`[FORENSIC-MOUSE] ⏸️  Movement ignored (within threshold) - returning early`);
                 return;
             }
         }
@@ -391,7 +374,6 @@ export default class MouseSource extends InputSource {
         // [INP.3.4] Only send MouseMove if dragging or no button held
         if (this.buttons.size === 0 && !this.isDragging) {
             // No buttons pressed and not dragging, don't send movement
-            console.log(`[FORENSIC-MOUSE] 🚫 Not sending MouseMove - no buttons pressed and not dragging`);
             return;
         }
 
@@ -404,8 +386,6 @@ export default class MouseSource extends InputSource {
         } else if (this.buttons.has('MiddleClick')) {
             heldButton = 'MiddleClick';
         }
-
-        console.log(`[FORENSIC-MOUSE] 📤 Sending MouseMove event | heldButton: ${heldButton} | isDragging: ${this.isDragging} | delta: (${this.deltaPosition.x}, ${this.deltaPosition.y})`);
 
         // [INP.3.6] Send MouseMove event to InputManager
         this.sendInput({
