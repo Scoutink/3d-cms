@@ -74,6 +74,49 @@ class GroundPlugin extends Plugin {
         this.textureMode = 'tiled'; // 'tiled', 'stretched', 'centered'
         this.textureOptions = {};
 
+        // [GRD.5.4] Texture presets
+        // USER REQUIREMENT: Easy texture application with presets
+        this.texturePresets = {
+            grass: {
+                name: 'Grass',
+                diffuse: 'https://playground.babylonjs.com/textures/grass.png',
+                normal: 'https://playground.babylonjs.com/textures/grassn.png',
+                tiling: { u: 10, v: 10 },
+                description: '🌿 Grass (Tiled)'
+            },
+            dirt: {
+                name: 'Dirt',
+                diffuse: 'https://playground.babylonjs.com/textures/ground.jpg',
+                tiling: { u: 8, v: 8 },
+                description: '🟤 Dirt (Tiled)'
+            },
+            stone: {
+                name: 'Stone',
+                diffuse: 'https://playground.babylonjs.com/textures/rock.png',
+                normal: 'https://playground.babylonjs.com/textures/rockn.png',
+                tiling: { u: 6, v: 6 },
+                description: '🪨 Stone (Tiled)'
+            },
+            sand: {
+                name: 'Sand',
+                diffuse: 'https://playground.babylonjs.com/textures/sand.jpg',
+                tiling: { u: 8, v: 8 },
+                description: '🏖️ Sand (Tiled)'
+            },
+            concrete: {
+                name: 'Concrete',
+                diffuse: 'https://playground.babylonjs.com/textures/floor.png',
+                tiling: { u: 4, v: 4 },
+                description: '⬜ Concrete (Tiled)'
+            },
+            wood: {
+                name: 'Wood',
+                diffuse: 'https://playground.babylonjs.com/textures/wood.jpg',
+                tiling: { u: 5, v: 5 },
+                description: '🪵 Wood (Tiled)'
+            }
+        };
+
         // [GRD] Type
         this.groundType = 'plane';
 
@@ -93,8 +136,8 @@ class GroundPlugin extends Plugin {
 
         this.groundType = groundConfig.type || 'plane';
         this.sizeMode = groundConfig.sizeMode || 'fixed';
-        this.width = groundConfig.width || 100;
-        this.height = groundConfig.height || 100;
+        this.width = groundConfig.width || groundConfig.size || 100;
+        this.height = groundConfig.height || groundConfig.size || 100;
         this.rotation = groundConfig.rotation || { x: 0, y: 0, z: 0 };
         this.edgeBehavior = groundConfig.edgeBehavior || 'stop';
         this.collisionEnabled = groundConfig.collision !== false;
@@ -104,6 +147,17 @@ class GroundPlugin extends Plugin {
             this.teleportPosition = groundConfig.teleportPosition;
         }
 
+        // [GRD.5] Load material/texture configuration
+        if (groundConfig.material) {
+            this.materialConfig = groundConfig.material;
+        } else if (groundConfig.texture) {
+            // Support legacy texture config
+            this.materialConfig = {
+                diffuse: groundConfig.texture,
+                tiling: groundConfig.tiling || { u: 1, v: 1 }
+            };
+        }
+
         console.log('[GRD] Ground configuration loaded');
     }
 
@@ -111,6 +165,28 @@ class GroundPlugin extends Plugin {
     start() {
         // [GRD.1] Create ground
         this.createGround(this.groundType);
+
+        // [GRD.5] Apply texture from config if specified
+        if (this.materialConfig) {
+            if (this.materialConfig.diffuse) {
+                this.setTexture(
+                    this.materialConfig.diffuse,
+                    'tiled',
+                    { tiling: this.materialConfig.tiling || { u: 1, v: 1 } }
+                );
+
+                // Apply additional PBR maps if specified
+                if (this.materialConfig.normal || this.materialConfig.roughness) {
+                    const material = this.ground.material;
+                    if (this.materialConfig.normal) {
+                        const normalTexture = new BABYLON.Texture(this.materialConfig.normal, this.scene);
+                        normalTexture.uScale = this.materialConfig.tiling?.u || 1;
+                        normalTexture.vScale = this.materialConfig.tiling?.v || 1;
+                        material.bumpTexture = normalTexture;
+                    }
+                }
+            }
+        }
 
         // [GRD.3] Apply rotation if specified
         if (this.rotation.x !== 0 || this.rotation.y !== 0 || this.rotation.z !== 0) {
@@ -787,6 +863,172 @@ class GroundPlugin extends Plugin {
             mode,
             options
         });
+    }
+
+    // [GRD.5.4] Use texture preset
+    // USER REQUIREMENT: Quick texture application with presets
+    useTexturePreset(presetName) {
+        const preset = this.texturePresets[presetName];
+
+        if (!preset) {
+            console.warn(`[GRD.5.4] Unknown texture preset: ${presetName}`);
+            console.log('[GRD.5.4] Available presets:', Object.keys(this.texturePresets).join(', '));
+            return;
+        }
+
+        // Apply diffuse texture with tiling
+        this.setTexture(preset.diffuse, 'tiled', { tiling: preset.tiling });
+
+        // Apply normal map if available
+        if (preset.normal && this.ground && this.ground.material) {
+            const normalTexture = new BABYLON.Texture(preset.normal, this.scene);
+            normalTexture.uScale = preset.tiling.u;
+            normalTexture.vScale = preset.tiling.v;
+            this.ground.material.bumpTexture = normalTexture;
+        }
+
+        console.log(`[GRD.5.4] Applied texture preset: ${preset.name} (${preset.description})`);
+
+        // [EVT.2] Emit preset changed event
+        this.events.emit('ground:texture-preset:changed', {
+            preset: presetName,
+            config: preset
+        });
+
+        return this;
+    }
+
+    // [GRD.5.5] Set PBR texture with full material maps
+    // USER REQUIREMENT: Advanced PBR textures for realistic ground
+    setPBRTexture(options = {}) {
+        if (!this.ground) {
+            console.warn('[GRD.5.5] No ground to apply PBR texture');
+            return;
+        }
+
+        // Create PBR material if current material is not PBR
+        if (!(this.ground.material instanceof BABYLON.PBRMaterial)) {
+            const pbrMaterial = new BABYLON.PBRMaterial('groundPBRMaterial', this.scene);
+            this.ground.material = pbrMaterial;
+            this.material = pbrMaterial;
+        }
+
+        const material = this.ground.material;
+        const tiling = options.tiling || { u: 1, v: 1 };
+
+        // Apply albedo (diffuse) texture
+        if (options.albedo) {
+            const albedoTexture = new BABYLON.Texture(options.albedo, this.scene);
+            albedoTexture.uScale = tiling.u;
+            albedoTexture.vScale = tiling.v;
+            material.albedoTexture = albedoTexture;
+        }
+
+        // Apply normal map
+        if (options.normal) {
+            const normalTexture = new BABYLON.Texture(options.normal, this.scene);
+            normalTexture.uScale = tiling.u;
+            normalTexture.vScale = tiling.v;
+            material.bumpTexture = normalTexture;
+        }
+
+        // Apply roughness map
+        if (options.roughness) {
+            const roughnessTexture = new BABYLON.Texture(options.roughness, this.scene);
+            roughnessTexture.uScale = tiling.u;
+            roughnessTexture.vScale = tiling.v;
+            material.metallicTexture = roughnessTexture;
+            material.useRoughnessFromMetallicTextureAlpha = false;
+            material.useRoughnessFromMetallicTextureGreen = true;
+        }
+
+        // Apply metallic map
+        if (options.metallic) {
+            if (!material.metallicTexture) {
+                const metallicTexture = new BABYLON.Texture(options.metallic, this.scene);
+                metallicTexture.uScale = tiling.u;
+                metallicTexture.vScale = tiling.v;
+                material.metallicTexture = metallicTexture;
+            }
+            material.metallic = options.metallicValue || 0.0;
+        }
+
+        // Apply ambient occlusion
+        if (options.ao) {
+            const aoTexture = new BABYLON.Texture(options.ao, this.scene);
+            aoTexture.uScale = tiling.u;
+            aoTexture.vScale = tiling.v;
+            material.ambientTexture = aoTexture;
+            material.useAmbientOcclusionFromMetallicTextureRed = true;
+        }
+
+        // Set PBR properties
+        material.roughness = options.roughnessValue || 0.8;
+        material.metallic = options.metallicValue || 0.0;
+
+        console.log('[GRD.5.5] PBR texture applied to ground');
+
+        // [EVT.2] Emit PBR texture changed event
+        this.events.emit('ground:pbr-texture:changed', {
+            options
+        });
+
+        return this;
+    }
+
+    // [GRD.5.6] Set texture tiling (UV scale)
+    // USER REQUIREMENT: Adjust texture repetition without reloading
+    setTextureTiling(uScale, vScale) {
+        if (!this.ground || !this.ground.material) {
+            console.warn('[GRD.5.6] No ground or material to set tiling');
+            return;
+        }
+
+        const material = this.ground.material;
+
+        // Update diffuse/albedo texture
+        if (material.diffuseTexture) {
+            material.diffuseTexture.uScale = uScale;
+            material.diffuseTexture.vScale = vScale;
+        }
+        if (material.albedoTexture) {
+            material.albedoTexture.uScale = uScale;
+            material.albedoTexture.vScale = vScale;
+        }
+
+        // Update normal map
+        if (material.bumpTexture) {
+            material.bumpTexture.uScale = uScale;
+            material.bumpTexture.vScale = vScale;
+        }
+
+        // Update other PBR maps
+        if (material.metallicTexture) {
+            material.metallicTexture.uScale = uScale;
+            material.metallicTexture.vScale = vScale;
+        }
+        if (material.ambientTexture) {
+            material.ambientTexture.uScale = uScale;
+            material.ambientTexture.vScale = vScale;
+        }
+
+        this.textureOptions.tiling = { u: uScale, v: vScale };
+
+        console.log(`[GRD.5.6] Texture tiling set: u=${uScale}, v=${vScale}`);
+
+        return this;
+    }
+
+    // [GRD.5.7] Get available texture presets
+    getTexturePresets() {
+        return { ...this.texturePresets };
+    }
+
+    // [GRD.5.8] Add custom texture preset
+    addTexturePreset(name, config) {
+        this.texturePresets[name] = config;
+        console.log(`[GRD.5.8] Added custom texture preset: ${name}`);
+        return this;
     }
 
     // [GRD.6] Enable collision

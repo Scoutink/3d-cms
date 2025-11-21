@@ -484,6 +484,31 @@
             </div>
         </div>
 
+        <!-- [GRD] Ground Textures -->
+        <h3>🎨 Ground Textures</h3>
+        <div class="control-group">
+            <label>Texture Presets</label>
+            <div class="material-grid">
+                <button onclick="setGroundTexture('grass')">🌿 Grass</button>
+                <button onclick="setGroundTexture('dirt')">🟤 Dirt</button>
+                <button onclick="setGroundTexture('stone')">🪨 Stone</button>
+                <button onclick="setGroundTexture('sand')">🏖️ Sand</button>
+                <button onclick="setGroundTexture('concrete')">⬜ Concrete</button>
+                <button onclick="setGroundTexture('wood')">🪵 Wood</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Texture Tiling</label>
+                    <span class="value-display" id="textureTiling">10x</span>
+                </div>
+                <input type="range" id="textureTilingSlider" min="1" max="20" value="10"
+                       oninput="updateTextureTiling(this.value)">
+            </div>
+        </div>
+
         <!-- [GRD] Edge Behavior -->
         <h3>🚧 Ground Edge Behavior</h3>
         <div class="control-group">
@@ -702,6 +727,26 @@
 
             groundPlugin.setEdgeBehavior(behavior);
             console.log(`[UI] Edge behavior set to: ${behavior}`);
+        };
+
+        // [UI.CONTROLS] Ground Texture Preset
+        window.setGroundTexture = function(presetName) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            groundPlugin.useTexturePreset(presetName);
+            console.log(`[UI] Ground texture: ${presetName}`);
+        };
+
+        // [UI.CONTROLS] Texture Tiling
+        window.updateTextureTiling = function(value) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            const tiling = parseFloat(value);
+            groundPlugin.setTextureTiling(tiling, tiling);
+
+            document.getElementById('textureTiling').textContent = tiling.toFixed(0) + 'x';
         };
 
         // [UI.CONTROLS] Sky Preset
