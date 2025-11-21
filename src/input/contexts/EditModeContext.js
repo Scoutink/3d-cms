@@ -93,7 +93,8 @@ export default class EditModeContext extends InputContext {
             {
                 input: 'LeftClick',
                 action: 'selectObject',
-                condition: 'clickMesh'
+                condition: 'clickMesh',
+                state: 'clicked'  // Only on actual click, not press or release
             },
 
             // Ctrl+Click for multi-select
@@ -101,28 +102,32 @@ export default class EditModeContext extends InputContext {
                 input: 'LeftClick',
                 action: 'multiSelect',
                 condition: 'clickMesh',
-                modifier: 'Ctrl'
+                modifier: 'Ctrl',
+                state: 'clicked'  // Only on actual click
             },
 
             // Click ground to deselect all
             {
                 input: 'LeftClick',
                 action: 'deselectAll',
-                condition: 'clickGround'
+                condition: 'clickGround',
+                state: 'clicked'  // Only on actual click
             },
 
             // Tap object to select (mobile)
             {
                 input: 'Tap',
                 action: 'selectObject',
-                condition: 'clickMesh'
+                condition: 'clickMesh',
+                state: 'clicked'  // Only on actual tap
             },
 
             // Tap ground to deselect (mobile)
             {
                 input: 'Tap',
                 action: 'deselectAll',
-                condition: 'clickGround'
+                condition: 'clickGround',
+                state: 'clicked'  // Only on actual tap
             },
 
             // =================================================================
@@ -262,14 +267,16 @@ export default class EditModeContext extends InputContext {
             {
                 input: 'RightClick',
                 action: 'showContextMenu',
-                condition: 'clickMesh'
+                condition: 'clickMesh',
+                state: 'clicked'  // Only on actual click
             },
 
             // Long press for context menu (mobile)
             {
                 input: 'LongPress',
                 action: 'showContextMenu',
-                condition: 'clickMesh'
+                condition: 'clickMesh',
+                state: 'held'  // Long press uses 'held' state
             },
 
             // =================================================================

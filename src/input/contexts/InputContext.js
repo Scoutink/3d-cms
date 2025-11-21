@@ -131,7 +131,13 @@ export default class InputContext {
             return false;
         }
 
-        // [INP.2.2] Check required modifier
+        // [INP.2.2] Check state matches (if binding specifies a state)
+        // This prevents actions from triggering multiple times on press/clicked/released
+        if (binding.state && event.state !== binding.state) {
+            return false;
+        }
+
+        // [INP.2.3] Check required modifier
         if (binding.modifier) {
             // Modifier can be single string or array
             const requiredModifiers = Array.isArray(binding.modifier)
@@ -145,7 +151,7 @@ export default class InputContext {
             }
         }
 
-        // [INP.2.3] Check condition
+        // [INP.2.4] Check condition
         if (binding.condition) {
             const conditionMet = this.checkCondition(binding.condition, event);
             if (!conditionMet) {

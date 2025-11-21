@@ -96,14 +96,16 @@ export default class ViewModeContext extends InputContext {
             {
                 input: 'LeftClick',
                 action: 'walkTo',
-                condition: 'clickGround'
+                condition: 'clickGround',
+                state: 'clicked'  // Only on actual click, not press or release
             },
 
             // Tap ground to walk there (mobile)
             {
                 input: 'Tap',
                 action: 'walkTo',
-                condition: 'clickGround'
+                condition: 'clickGround',
+                state: 'clicked'  // Only on actual tap
             },
 
             // =================================================================
