@@ -133,6 +133,12 @@ export default class MouseSource extends InputSource {
                 this.handlePointerUp(pointerInfo);
                 break;
 
+            case BABYLON.PointerEventTypes.POINTERPICK:
+                // POINTERPICK only fires on actual clicks (not drags)
+                // Babylon automatically distinguishes click from drag
+                this.handlePointerPick(pointerInfo);
+                break;
+
             case BABYLON.PointerEventTypes.POINTERMOVE:
                 // We handle movement via DOM mousemove for smoother tracking
                 break;
@@ -207,6 +213,77 @@ export default class MouseSource extends InputSource {
     }
 
     /**
+     * [INP.3] Handle pointer pick (actual click event)
+     *
+     * POINTERPICK only fires when user clicks (not drags).
+     * Babylon automatically distinguishes click from drag.
+     *
+     * @param {BABYLON.PointerInfo} pointerInfo - Babylon pointer info with pickInfo
+     */
+    handlePointerPick(pointerInfo) {
+        const event = pointerInfo.event;
+        const button = event.button;
+        const buttonName = this.getButtonName(button);
+        const pickInfo = pointerInfo.pickInfo;
+
+        // [INP.3.1] Detect double-click
+        let isDoubleClick = false;
+        if (this.lastClickTime && this.lastClickButton === buttonName) {
+            const timeSinceLastClick = performance.now() - this.lastClickTime;
+            if (timeSinceLastClick < this.doubleClickWindow) {
+                isDoubleClick = true;
+            }
+        }
+
+        // [INP.3.2] Update last click time for double-click detection
+        this.lastClickTime = performance.now();
+        this.lastClickButton = buttonName;
+
+        // [INP.3.3] Send appropriate click event to InputManager
+        if (isDoubleClick) {
+            // Send double-click event
+            this.sendInput({
+                source: 'mouse',
+                input: buttonName + 'Double',
+                state: 'double-clicked',
+                position: {
+                    x: this.scene.pointerX,
+                    y: this.scene.pointerY
+                },
+                hitInfo: {
+                    hit: pickInfo.hit,
+                    pickedMesh: pickInfo.pickedMesh,
+                    pickedPoint: pickInfo.pickedPoint,
+                    distance: pickInfo.distance,
+                    faceId: pickInfo.faceId,
+                    normal: pickInfo.getNormal ? pickInfo.getNormal() : null
+                },
+                originalEvent: event
+            });
+        } else {
+            // Send single click event
+            this.sendInput({
+                source: 'mouse',
+                input: buttonName,
+                state: 'clicked',
+                position: {
+                    x: this.scene.pointerX,
+                    y: this.scene.pointerY
+                },
+                hitInfo: {
+                    hit: pickInfo.hit,
+                    pickedMesh: pickInfo.pickedMesh,
+                    pickedPoint: pickInfo.pickedPoint,
+                    distance: pickInfo.distance,
+                    faceId: pickInfo.faceId,
+                    normal: pickInfo.getNormal ? pickInfo.getNormal() : null
+                },
+                originalEvent: event
+            });
+        }
+    }
+
+    /**
      * [INP.3] Handle pointer up (mouse button release)
      *
      * @param {BABYLON.PointerInfo} pointerInfo - Babylon pointer info
@@ -225,78 +302,12 @@ export default class MouseSource extends InputSource {
         // [INP.3.2] Calculate click duration
         const clickDuration = this.clickStartTime ? performance.now() - this.clickStartTime : 0;
 
-        // [INP.3.3] Determine if it was a click (not a drag)
-        const wasClick = !this.isDragging;
-
-        // [INP.3.4] Detect double-click
-        let isDoubleClick = false;
-        if (wasClick && this.lastClickTime && this.lastClickButton === buttonName) {
-            const timeSinceLastClick = performance.now() - this.lastClickTime;
-            if (timeSinceLastClick < this.doubleClickWindow) {
-                isDoubleClick = true;
-            }
-        }
-
-        // [INP.3.5] Update last click time for double-click detection
-        if (wasClick) {
-            this.lastClickTime = performance.now();
-            this.lastClickButton = buttonName;
-        }
-
-        // [INP.3.6] Perform raycast for click events
-        let pickInfo = null;
-        if (wasClick) {
-            pickInfo = this.scene.pick(
-                this.scene.pointerX,
-                this.scene.pointerY
-            );
-        }
-
-        // [INP.3.7] Remove from button state
+        // [INP.3.3] Remove from button state
         this.buttons.delete(buttonName);
 
-        // [INP.3.8] Send appropriate event to InputManager
-        if (isDoubleClick) {
-            // Send double-click event
-            this.sendInput({
-                source: 'mouse',
-                input: buttonName + 'Double',
-                state: 'double-clicked',
-                position: {
-                    x: this.scene.pointerX,
-                    y: this.scene.pointerY
-                },
-                hitInfo: pickInfo ? {
-                    hit: pickInfo.hit,
-                    pickedMesh: pickInfo.pickedMesh,
-                    pickedPoint: pickInfo.pickedPoint,
-                    distance: pickInfo.distance
-                } : null,
-                originalEvent: event
-            });
-        } else if (wasClick) {
-            // Send single click event (released after click, not drag)
-            this.sendInput({
-                source: 'mouse',
-                input: buttonName,
-                state: 'clicked',
-                position: {
-                    x: this.scene.pointerX,
-                    y: this.scene.pointerY
-                },
-                duration: clickDuration,
-                hitInfo: pickInfo ? {
-                    hit: pickInfo.hit,
-                    pickedMesh: pickInfo.pickedMesh,
-                    pickedPoint: pickInfo.pickedPoint,
-                    distance: pickInfo.distance,
-                    faceId: pickInfo.faceId,
-                    normal: pickInfo.getNormal ? pickInfo.getNormal() : null
-                } : null,
-                originalEvent: event
-            });
-        } else {
-            // Send drag end event (released after dragging)
+        // [INP.3.4] Send button released event if was dragging
+        // Note: Click events are now handled by POINTERPICK, not here
+        if (this.isDragging) {
             this.sendInput({
                 source: 'mouse',
                 input: buttonName,
@@ -311,7 +322,7 @@ export default class MouseSource extends InputSource {
             });
         }
 
-        // [INP.3.9] Reset drag state
+        // [INP.3.5] Reset drag state
         this.clickStartPosition = null;
         this.clickStartTime = null;
         this.isDragging = false;
