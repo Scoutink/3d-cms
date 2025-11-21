@@ -406,6 +406,141 @@
         body.view-mode .instructions {
             display: none;
         }
+
+        /* [UI.PROPS] Properties Panel */
+        .properties-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            padding: 0;
+            border-radius: 8px;
+            width: 280px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            z-index: 1001;
+            display: none; /* Hidden by default */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .properties-panel.visible {
+            display: block;
+        }
+
+        body.view-mode .properties-panel {
+            display: none !important;
+        }
+
+        .properties-header {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 12px 16px;
+            border-bottom: 2px solid rgba(76, 175, 80, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .properties-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .properties-body {
+            padding: 16px;
+        }
+
+        .property-section {
+            margin-bottom: 20px;
+        }
+
+        .property-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-section-title {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .property-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .property-input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .property-input-group:focus-within {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .property-label {
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #999;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .property-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            outline: none;
+        }
+
+        .property-input:focus {
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .object-name-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .object-name-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .property-hint {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            font-style: italic;
+        }
     </style>
     <!-- Babylon.js -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -415,6 +550,115 @@
 <body>
     <!-- Canvas -->
     <canvas id="renderCanvas"></canvas>
+
+    <!-- [UI.PROPS] Properties Panel -->
+    <div class="properties-panel" id="propertiesPanel">
+        <div class="properties-header">
+            <h3>📋 Properties</h3>
+        </div>
+        <div class="properties-body">
+            <!-- Object Name -->
+            <input type="text"
+                   class="object-name-input"
+                   id="propObjectName"
+                   placeholder="Object Name"
+                   disabled>
+
+            <!-- Position -->
+            <div class="property-section">
+                <div class="property-section-title">Position</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosX"
+                               step="0.1"
+                               onchange="updateObjectProperty('position', 'x', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosY"
+                               step="0.1"
+                               onchange="updateObjectProperty('position', 'y', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosZ"
+                               step="0.1"
+                               onchange="updateObjectProperty('position', 'z', this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rotation -->
+            <div class="property-section">
+                <div class="property-section-title">Rotation</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotX"
+                               step="1"
+                               onchange="updateObjectProperty('rotation', 'x', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotY"
+                               step="1"
+                               onchange="updateObjectProperty('rotation', 'y', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotZ"
+                               step="1"
+                               onchange="updateObjectProperty('rotation', 'z', this.value)">
+                    </div>
+                </div>
+                <div class="property-hint">Values in degrees</div>
+            </div>
+
+            <!-- Scale -->
+            <div class="property-section">
+                <div class="property-section-title">Scale</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleX"
+                               step="0.1"
+                               onchange="updateObjectProperty('scale', 'x', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleY"
+                               step="0.1"
+                               onchange="updateObjectProperty('scale', 'y', this.value)">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleZ"
+                               step="0.1"
+                               onchange="updateObjectProperty('scale', 'z', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Loading screen -->
     <div class="loading-screen" id="loadingScreen">
@@ -438,8 +682,9 @@
             <li><strong>⚡ PerformancePlugin:</strong> Real-time optimization</li>
         </ul>
         <p style="margin-top: 15px; font-size: 14px; color: #999;">
-            <strong>Controls:</strong> WASD to move, Mouse to look, Click objects to interact<br>
-            <strong>Tab Key:</strong> Toggle Edit/View Mode
+            <strong>Controls:</strong> WASD to move, Mouse to look, Click objects to select<br>
+            <strong>Tab Key:</strong> Toggle Edit/View Mode<br>
+            <strong>Edit Objects:</strong> Click any object to see its Properties Panel (left side)
         </p>
         <button class="welcome-button" onclick="startDemo()">🚀 Start Demo</button>
     </div>
@@ -455,29 +700,12 @@
     <div class="control-panel">
         <h2>⚙️ Edit Controls</h2>
 
-        <!-- [GIZ] Transform Gizmos -->
-        <h3>🎯 Transform Tools</h3>
-        <div class="control-group">
-            <label>Gizmo Mode (Select object first)</label>
-            <button onclick="setGizmoMode('position')" id="gizmoPositionBtn" class="active">
-                📍 Position (W)
-            </button>
-            <button onclick="setGizmoMode('rotation')" id="gizmoRotationBtn">
-                🔄 Rotation (E)
-            </button>
-            <button onclick="setGizmoMode('scale')" id="gizmoScaleBtn">
-                📏 Scale (R)
-            </button>
-            <button onclick="setGizmoMode('none')" id="gizmoNoneBtn">
-                ❌ No Gizmo
-            </button>
-        </div>
-
-        <div class="control-group">
-            <label>
-                <input type="checkbox" id="gizmoSnapping" onchange="toggleGizmoSnapping(this.checked)">
-                Enable Snapping (Shift)
-            </label>
+        <!-- [HINT] Usage Instructions -->
+        <div class="control-group" style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4CAF50;">
+            <p style="margin: 0; font-size: 12px; color: #81C784; line-height: 1.6;">
+                💡 <strong>Tip:</strong> Click any object to see its properties panel on the left.
+                Use the colored arrows to move/rotate objects.
+            </p>
         </div>
 
         <!-- [GRD] Ground Rotation -->
@@ -738,7 +966,7 @@
             }
         });
 
-        // [UI.GIZ] Gizmo Mode Control
+        // [UI.GIZ] Gizmo Mode Control (W/E/R shortcuts)
         window.setGizmoMode = function(mode) {
             const gizmoPlugin = window.gizmoPlugin;
             if (!gizmoPlugin) {
@@ -749,32 +977,14 @@
             // Set the gizmo mode
             gizmoPlugin.setMode(mode);
 
-            // Update button states
-            const buttons = {
-                'position': document.getElementById('gizmoPositionBtn'),
-                'rotation': document.getElementById('gizmoRotationBtn'),
-                'scale': document.getElementById('gizmoScaleBtn'),
-                'none': document.getElementById('gizmoNoneBtn')
+            const modeNames = {
+                'position': 'Move',
+                'rotation': 'Rotate',
+                'scale': 'Scale',
+                'none': 'None'
             };
 
-            // Remove active class from all buttons
-            Object.values(buttons).forEach(btn => btn?.classList.remove('active'));
-
-            // Add active class to selected button
-            if (buttons[mode]) {
-                buttons[mode].classList.add('active');
-            }
-
-            console.log(`[UI.GIZ] Gizmo mode: ${mode}`);
-        };
-
-        // [UI.GIZ] Toggle Gizmo Snapping
-        window.toggleGizmoSnapping = function(enabled) {
-            const gizmoPlugin = window.gizmoPlugin;
-            if (!gizmoPlugin) return;
-
-            gizmoPlugin.setSnapping(enabled);
-            console.log(`[UI.GIZ] Gizmo snapping: ${enabled ? 'enabled' : 'disabled'}`);
+            console.log(`[UI.GIZ] Transform tool: ${modeNames[mode] || mode} (colored arrows/circles)`);
         };
 
         // [UI.GIZ] Keyboard shortcuts for gizmo modes (W/E/R keys)
@@ -802,6 +1012,120 @@
                     break;
             }
         });
+
+        // [UI.PROPS] Properties Panel Management
+        window.selectedObject = null; // Currently selected object
+
+        // Show Properties Panel
+        window.showPropertiesPanel = function(mesh) {
+            if (!mesh) return;
+
+            // Don't show for ground, skybox, or terrain chunks
+            if (mesh.name === 'ground' || mesh.name === 'skybox' || mesh.name.startsWith('chunk_')) {
+                return;
+            }
+
+            window.selectedObject = mesh;
+
+            const panel = document.getElementById('propertiesPanel');
+            panel.classList.add('visible');
+
+            // Update panel with object properties
+            updatePropertiesPanel(mesh);
+
+            console.log(`[UI.PROPS] Properties panel opened for: ${mesh.name}`);
+        };
+
+        // Hide Properties Panel
+        window.hidePropertiesPanel = function() {
+            const panel = document.getElementById('propertiesPanel');
+            panel.classList.remove('visible');
+            window.selectedObject = null;
+
+            console.log('[UI.PROPS] Properties panel closed');
+        };
+
+        // Update Properties Panel with object values
+        window.updatePropertiesPanel = function(mesh) {
+            if (!mesh) return;
+
+            // Object name
+            document.getElementById('propObjectName').value = mesh.name;
+
+            // Position
+            document.getElementById('propPosX').value = mesh.position.x.toFixed(2);
+            document.getElementById('propPosY').value = mesh.position.y.toFixed(2);
+            document.getElementById('propPosZ').value = mesh.position.z.toFixed(2);
+
+            // Rotation (convert radians to degrees)
+            document.getElementById('propRotX').value = (mesh.rotation.x * 180 / Math.PI).toFixed(0);
+            document.getElementById('propRotY').value = (mesh.rotation.y * 180 / Math.PI).toFixed(0);
+            document.getElementById('propRotZ').value = (mesh.rotation.z * 180 / Math.PI).toFixed(0);
+
+            // Scale
+            document.getElementById('propScaleX').value = mesh.scaling.x.toFixed(2);
+            document.getElementById('propScaleY').value = mesh.scaling.y.toFixed(2);
+            document.getElementById('propScaleZ').value = mesh.scaling.z.toFixed(2);
+        };
+
+        // Update object property from panel input
+        window.updateObjectProperty = function(type, axis, value) {
+            if (!window.selectedObject) return;
+
+            const mesh = window.selectedObject;
+            const numValue = parseFloat(value);
+
+            switch (type) {
+                case 'position':
+                    mesh.position[axis] = numValue;
+                    break;
+                case 'rotation':
+                    // Convert degrees to radians
+                    mesh.rotation[axis] = numValue * Math.PI / 180;
+                    break;
+                case 'scale':
+                    mesh.scaling[axis] = numValue;
+                    break;
+            }
+
+            console.log(`[UI.PROPS] Updated ${mesh.name} ${type}.${axis} = ${numValue}`);
+        };
+
+        // Real-time update: Sync panel when gizmo changes object
+        window.syncPropertiesPanelRealtime = function() {
+            if (window.selectedObject && document.getElementById('propertiesPanel').classList.contains('visible')) {
+                updatePropertiesPanel(window.selectedObject);
+            }
+        };
+
+        // Listen to selection events to show/hide properties panel
+        window.addEventListener('load', () => {
+            if (window.engine && window.engine.events) {
+                // Show panel on selection
+                window.engine.events.on('interaction:selected', (data) => {
+                    showPropertiesPanel(data.mesh);
+                });
+
+                // Hide panel when all objects deselected
+                window.engine.events.on('interaction:deselected', (data) => {
+                    // Check if there are any selected objects left
+                    const interactionPlugin = window.interactionPlugin;
+                    if (interactionPlugin && interactionPlugin.getSelected().length === 0) {
+                        hidePropertiesPanel();
+                    }
+                });
+
+                // Update panel during gizmo drag
+                window.engine.events.on('gizmo:drag:end', () => {
+                    syncPropertiesPanelRealtime();
+                });
+            }
+        });
+
+        // Periodic sync (while dragging with gizmo)
+        setInterval(() => {
+            syncPropertiesPanelRealtime();
+        }, 100); // Update 10 times per second
 
         // [UI.CONTROLS] Ground Rotation Preset
         window.setGroundRotationPreset = function(preset) {
