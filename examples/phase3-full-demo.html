@@ -479,6 +479,7 @@
 
             // [HYBRID APPROACH] Use Babylon's built-in camera controls
             // This is the proven approach from scene.js that works reliably
+            const canvas = document.getElementById('renderCanvas');
             camera.attachControl(canvas, true);
 
             // Configure camera rotation sensitivity (higher = less sensitive)
