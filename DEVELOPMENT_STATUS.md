@@ -1,8 +1,14 @@
 # 3D CMS - Development Status & Roadmap
 
 **Last Updated:** 2025-01-21
-**Current Phase:** Phase 3 Complete ✅
+**Current Phase:** Phase 3.5 Complete ✅ | Phase 4 Foundation In Progress
 **Branch:** `claude/analyze-repo-workshop-setup-011CUfCp7Hi83Lwu2v7Kq7h5`
+
+**Latest Achievements:**
+- ✅ Edit/View mode toggle system
+- ✅ Sky & environment system (5 presets)
+- ✅ Ground texture system (6 presets + UV tiling)
+- ✅ Infinite procedural terrain (chunk-based loading)
 
 ---
 
@@ -60,6 +66,43 @@
   - [x] Priority-based blocking
   - [x] State management
   - [x] HYBRID approach with Babylon camera controls
+
+### **Phase 3.5: Environment & Terrain** ✅ (NEW - Jan 2025)
+- [x] **Edit/View Mode System**
+  - [x] Tab key toggle between modes
+  - [x] Full control panel restoration (Phase 2 features)
+  - [x] InputManager context switching
+  - [x] LocalStorage persistence
+
+- [x] **SkyPlugin (500+ lines)**
+  - [x] 5 sky presets (Day, Sunset, Night, Cloudy, Space)
+  - [x] Dynamic skybox rendering
+  - [x] HDR environment for PBR reflections
+  - [x] Fog system integration
+  - [x] Gradient sky generation
+
+- [x] **Ground Texture System**
+  - [x] 6 texture presets with normal maps
+  - [x] UV tiling control (1-20x slider)
+  - [x] PBR texture support (albedo, normal, roughness, metallic, AO)
+  - [x] Config-driven defaults
+  - [x] Custom preset support
+
+- [x] **InfiniteGroundPlugin (600+ lines)**
+  - [x] Chunk-based infinite terrain
+  - [x] Dynamic chunk loading/unloading
+  - [x] Configurable view distance (1-5 chunks)
+  - [x] Procedural height generation (optional)
+  - [x] Memory-efficient shared material
+  - [x] Runtime toggle between finite/infinite
+  - [x] Seamless chunk transitions
+  - [x] Statistics tracking
+
+**Code Statistics Phase 3.5:**
+- Lines Added: ~1,800 lines
+- New Plugins: 2 (SkyPlugin, InfiniteGroundPlugin)
+- Enhanced Plugins: 1 (GroundPlugin texture system)
+- Commits: 4 (7e81482, bdc95c5, 4b18f28, abb3b71)
 
 ---
 
@@ -147,24 +190,29 @@
 
 ## 🚀 NEXT STEPS
 
-### **Phase 4: Scene Management** (NEXT)
-1. **Scene Serialization**
+### **Phase 4: Scene Management** 🔄 (IN PROGRESS)
+
+**CURRENT FOCUS: Transform Gizmos** - Foundation for object manipulation in Edit mode
+
+3. **Transform Gizmos** (Edit Mode) 🎯 **← CURRENT WORK**
+   - [ ] Position gizmo (W key + UI button)
+   - [ ] Rotation gizmo (E key + UI button)
+   - [ ] Scale gizmo (R key + UI button)
+   - [ ] Gizmo mode switching system
+   - [ ] Gizmo interactions with InputManager
+   - [ ] Visual feedback and snapping
+
+1. **Scene Serialization** (PLANNED)
    - [ ] Save scene state to JSON
    - [ ] Load scene state from JSON
    - [ ] Version control for scenes
    - [ ] Export scene data
 
-2. **Object Management**
+2. **Object Management** (PLANNED)
    - [ ] Object hierarchy (parent/child relationships)
    - [ ] Object grouping
    - [ ] Object cloning/duplication
    - [ ] Object properties panel
-
-3. **Transform Gizmos** (Edit Mode)
-   - [ ] Position gizmo (Digit 1)
-   - [ ] Rotation gizmo (Digit 2)
-   - [ ] Scale gizmo (Digit 3)
-   - [ ] Gizmo interactions with InputManager
 
 4. **Undo/Redo System**
    - [ ] Command pattern implementation
@@ -195,12 +243,24 @@
    - *Priority:* Low
    - *Fix:* Add better collision detection for camera tilt
 
+2. **Infinite terrain chunk seams** - Potential visual seams between chunks with height variation
+   - *Priority:* Low
+   - *Status:* Only visible with heightVariation enabled
+   - *Fix:* Implement vertex welding at chunk boundaries
+
+### **Phase 3.5 Limitations**
+- **Infinite terrain**: Height variation uses simple noise (not production-ready)
+- **Sky system**: Gradients use averaged colors (true gradients require custom shader)
+- **Texture presets**: Limited to 6 presets (users can add custom via API)
+
 ### **Future Enhancements**
 1. **Gamepad support** - Add gamepad InputSource
 2. **VR support** - Add VR InputSource and VRModeContext
 3. **Touch gestures** - Enhance TouchSource with more gestures
 4. **Custom key bindings** - Allow users to remap controls
 5. **Input recording** - Record and replay input for testing/tutorials
+6. **Advanced terrain** - Biome system, LOD, advanced noise algorithms
+7. **Sky improvements** - Procedural clouds, day/night cycle, weather effects
 
 ---
 
