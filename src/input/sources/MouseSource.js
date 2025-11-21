@@ -356,9 +356,12 @@ export default class MouseSource extends InputSource {
             const dy = this.position.y - this.clickStartPosition.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
+            console.log(`[FORENSIC-MOUSE] Movement detected | Distance from start: ${distance.toFixed(2)}px | Threshold: ${this.dragThreshold}px | isDragging: ${this.isDragging}`);
+
             // [INP.3.3.1] If moved beyond threshold, it's a drag (not a click)
             if (distance >= this.dragThreshold) {
                 this.isDragging = true;
+                console.log(`[FORENSIC-MOUSE] 🚨 DRAG STARTED - distance ${distance.toFixed(2)}px exceeded threshold ${this.dragThreshold}px`);
 
                 // Clear hold timer since user is dragging
                 if (this.holdTimer) {
@@ -367,6 +370,7 @@ export default class MouseSource extends InputSource {
                 }
             } else {
                 // Still within threshold - might be hand shake, ignore movement
+                console.log(`[FORENSIC-MOUSE] ⏸️  Movement ignored (within threshold) - returning early`);
                 return;
             }
         }
@@ -386,6 +390,8 @@ export default class MouseSource extends InputSource {
         } else if (this.buttons.has('MiddleClick')) {
             heldButton = 'MiddleClick';
         }
+
+        console.log(`[FORENSIC-MOUSE] 📤 Sending MouseMove event | heldButton: ${heldButton} | isDragging: ${this.isDragging} | delta: (${this.deltaPosition.x}, ${this.deltaPosition.y})`);
 
         // [INP.3.6] Send MouseMove event to InputManager
         this.sendInput({

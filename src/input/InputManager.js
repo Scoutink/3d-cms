@@ -91,7 +91,7 @@ export default class InputManager extends EventEmitter {
         };
 
         // [INP.1.7] Debug mode
-        this.debug = false;
+        this.debug = true;  // FORENSIC INVESTIGATION MODE
 
         // [INP.1.8] Statistics
         this.stats = {
@@ -308,6 +308,11 @@ export default class InputManager extends EventEmitter {
      * @param {Object} [action.hitInfo] - Hit information (for picking actions)
      */
     triggerAction(action) {
+        // [FORENSIC] Log all actions, especially lookAround
+        if (action.name === 'lookAround') {
+            console.log(`[FORENSIC-ACTION] 🎯 lookAround triggered! | delta: (${action.delta?.x}, ${action.delta?.y}) | state: ${action.state}`);
+        }
+
         // [INP.1.1] Apply filters (dead zone, smoothing, etc.)
         if (action.value !== undefined && this.filters.enabled) {
             action.value = this.applyFilters(action);
