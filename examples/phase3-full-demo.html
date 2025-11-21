@@ -1098,30 +1098,6 @@
             }
         };
 
-        // Listen to selection events to show/hide properties panel
-        window.addEventListener('load', () => {
-            if (window.engine && window.engine.events) {
-                // Show panel on selection
-                window.engine.events.on('interaction:selected', (data) => {
-                    showPropertiesPanel(data.mesh);
-                });
-
-                // Hide panel when all objects deselected
-                window.engine.events.on('interaction:deselected', (data) => {
-                    // Check if there are any selected objects left
-                    const interactionPlugin = window.interactionPlugin;
-                    if (interactionPlugin && interactionPlugin.getSelected().length === 0) {
-                        hidePropertiesPanel();
-                    }
-                });
-
-                // Update panel during gizmo drag
-                window.engine.events.on('gizmo:drag:end', () => {
-                    syncPropertiesPanelRealtime();
-                });
-            }
-        });
-
         // Periodic sync (while dragging with gizmo)
         setInterval(() => {
             syncPropertiesPanelRealtime();
@@ -1856,10 +1832,17 @@
             // Interaction events
             events.on('interaction:selected', (data) => {
                 console.log('[DEMO] Selected:', data.name);
+                // Show Properties Panel
+                showPropertiesPanel(data.mesh);
             });
 
             events.on('interaction:deselected', (data) => {
                 console.log('[DEMO] Deselected:', data.name);
+                // Hide Properties Panel if no objects selected
+                const interactionPlugin = window.interactionPlugin;
+                if (interactionPlugin && interactionPlugin.getSelected().length === 0) {
+                    hidePropertiesPanel();
+                }
             });
 
             events.on('interaction:drag:start', (data) => {
@@ -1868,6 +1851,11 @@
 
             events.on('interaction:drag:end', (data) => {
                 console.log('[DEMO] Drag ended:', data.name, 'at', data.endPosition);
+            });
+
+            // Gizmo events (for Properties Panel sync)
+            events.on('gizmo:drag:end', () => {
+                syncPropertiesPanelRealtime();
             });
 
             // Performance events
