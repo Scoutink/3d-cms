@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2 Debug - 3D CMS</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 20px;
+        }
+        #log {
+            background: #000;
+            padding: 20px;
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .info { color: #0ff; }
+        h1 { color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>Phase 2 Demo - Debug Mode</h1>
+    <div id="log"></div>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+
+    <script type="module">
+        const log = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${new Date().toISOString()}] ${message}`;
+            log.appendChild(line);
+            console.log(message);
+        }
+
+        addLog('=== PHASE 2 DEMO DEBUG ===', 'info');
+        addLog('Starting initialization...', 'info');
+
+        try {
+            addLog('Step 1: Checking Babylon.js...', 'info');
+            if (typeof BABYLON !== 'undefined') {
+                addLog(`✓ Babylon.js loaded - Version: ${BABYLON.Engine.Version}`, 'success');
+            } else {
+                addLog('✗ Babylon.js NOT loaded!', 'error');
+            }
+
+            addLog('Step 2: Importing BabylonEngine...', 'info');
+            import('../src/core/BabylonEngine.js')
+                .then(module => {
+                    addLog('✓ BabylonEngine imported successfully', 'success');
+
+                    addLog('Step 3: Importing ConfigLoader...', 'info');
+                    return import('../src/config/ConfigLoader.js');
+                })
+                .then(module => {
+                    addLog('✓ ConfigLoader imported successfully', 'success');
+
+                    addLog('Step 4: Importing GroundPlugin...', 'info');
+                    return import('../src/plugins/GroundPlugin.js');
+                })
+                .then(module => {
+                    addLog('✓ GroundPlugin imported successfully', 'success');
+
+                    addLog('Step 5: Importing LightingPlugin...', 'info');
+                    return import('../src/plugins/LightingPlugin.js');
+                })
+                .then(module => {
+                    addLog('✓ LightingPlugin imported successfully', 'success');
+
+                    addLog('Step 6: Importing ShadowPlugin...', 'info');
+                    return import('../src/plugins/ShadowPlugin.js');
+                })
+                .then(module => {
+                    addLog('✓ ShadowPlugin imported successfully', 'success');
+
+                    addLog('Step 7: Importing MaterialPlugin...', 'info');
+                    return import('../src/plugins/MaterialPlugin.js');
+                })
+                .then(module => {
+                    addLog('✓ MaterialPlugin imported successfully', 'success');
+
+                    addLog('Step 8: Loading config file...', 'info');
+                    return fetch('../config/engine-config.json');
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Config file fetch failed: ${response.status} ${response.statusText}`);
+                    }
+                    addLog('✓ Config file found', 'success');
+                    return response.json();
+                })
+                .then(config => {
+                    addLog('✓ Config file parsed successfully', 'success');
+                    addLog(`Config keys: ${Object.keys(config).join(', ')}`, 'info');
+
+                    addLog('', 'info');
+                    addLog('=== ALL IMPORTS SUCCESSFUL ===', 'success');
+                    addLog('', 'info');
+                    addLog('Your Phase 2 demo should work!', 'success');
+                    addLog('If phase2-visual-demo.html still fails, please copy ALL error messages from browser console (F12)', 'info');
+                })
+                .catch(error => {
+                    addLog('', 'info');
+                    addLog('=== ERROR DETECTED ===', 'error');
+                    addLog(`Error: ${error.message}`, 'error');
+                    addLog(`Stack: ${error.stack}`, 'error');
+                    addLog('', 'info');
+                    addLog('COPY THE ERROR ABOVE AND SHARE IT', 'error');
+                });
+
+        } catch (error) {
+            addLog('Sync error: ' + error.message, 'error');
+        }
+    </script>
+</body>
+</html>

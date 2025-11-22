@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2: Visual Enhancement Demo - 3D CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            outline: none;
+        }
+
+        /* [UI.1] Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 320px;
+            max-width: 350px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 12px;
+            text-align: center;
+        }
+
+        .control-panel h3 {
+            margin: 25px 0 12px 0;
+            font-size: 13px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        .control-group button {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .control-group button:hover {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .control-group button:active {
+            transform: translateY(0);
+        }
+
+        .control-group button.active {
+            background: linear-gradient(135deg, #81C784, #66BB6A);
+            box-shadow: 0 0 16px rgba(129, 199, 132, 0.6);
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.2);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4CAF50;
+            font-weight: bold;
+            float: right;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .slider-container {
+            clear: both;
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            min-width: 280px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-panel h3 {
+            margin: 0 0 12px 0;
+            color: #4CAF50;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .info-item {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .info-label {
+            color: #aaa;
+        }
+
+        .info-value {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 18px;
+            border-radius: 12px;
+            max-width: 320px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .instructions h3 {
+            margin: 0 0 12px 0;
+            color: #4CAF50;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .instructions li {
+            margin: 6px 0;
+            font-size: 12px;
+            color: #ccc;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .instructions li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .instructions strong {
+            color: #4CAF50;
+        }
+
+        /* Scrollbar */
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: #66BB6A;
+        }
+
+        /* Material Preview Grid */
+        .material-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .material-grid button {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        /* [UI.MODE] Edit/View Mode Toggle */
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-toggle button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: scale(1.05);
+        }
+
+        /* [UI.MODE] View mode - hide edit controls */
+        body.view-mode .control-panel,
+        body.view-mode .info-panel,
+        body.view-mode .instructions {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- [UI.MODE] Mode Toggle -->
+    <div class="mode-toggle">
+        <button id="modeToggleBtn" onclick="toggleMode()">
+            📝 Switch to View Mode
+        </button>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions" id="instructions">
+        <h3>🎨 Phase 2: Visual Enhancement</h3>
+        <ul>
+            <li><strong>WASD / Arrows:</strong> Move camera</li>
+            <li><strong>Mouse:</strong> Look around</li>
+            <li><strong>Ground Rotation:</strong> 3D website mode!</li>
+            <li><strong>Lighting:</strong> 6 presets available</li>
+            <li><strong>Shadows:</strong> 4 quality levels</li>
+            <li><strong>Materials:</strong> 13 presets</li>
+        </ul>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <h3>📊 System Info</h3>
+        <div class="info-item">
+            <span class="info-label">FPS:</span>
+            <span class="info-value" id="fps">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Ground Rotation:</span>
+            <span class="info-value" id="groundRotation">Horizontal</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Lighting:</span>
+            <span class="info-value" id="lightingPreset">Day</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Shadow Quality:</span>
+            <span class="info-value" id="shadowQuality">Medium</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Objects:</span>
+            <span class="info-value" id="objectCount">0</span>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <h2>⚙️ Phase 2 Controls</h2>
+
+        <!-- [GRD] Ground Rotation -->
+        <h3>🌍 Ground Rotation</h3>
+        <div class="control-group">
+            <label>Quick Presets (3D Website Mode!)</label>
+            <button onclick="setGroundRotationPreset('horizontal')">➡️ Horizontal (Default)</button>
+            <button onclick="setGroundRotationPreset('vertical')">⬆️ Vertical (Wall)</button>
+            <button onclick="setGroundRotationPreset('diagonal45')">↗️ Diagonal 45°</button>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>X-Axis Tilt</label>
+                    <span class="value-display" id="rotX">0°</span>
+                </div>
+                <input type="range" id="rotXSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Y-Axis Spin</label>
+                    <span class="value-display" id="rotY">0°</span>
+                </div>
+                <input type="range" id="rotYSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Z-Axis Tilt</label>
+                    <span class="value-display" id="rotZ">0°</span>
+                </div>
+                <input type="range" id="rotZSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+
+            <!-- [GRD.3.2] Rotate Full Scene Option -->
+            <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="rotateFullScene" checked onchange="toggleRotateFullScene()"
+                           style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+                    <span>🔄 Rotate Full Scene (objects follow ground)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- [GRD] Edge Behavior -->
+        <h3>🚧 Ground Edge Behavior</h3>
+        <div class="control-group">
+            <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
+            <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+            <button onclick="setEdgeBehavior('wrap')">♻️ Wrap Around</button>
+        </div>
+
+        <!-- [LGT] Lighting -->
+        <h3>💡 Lighting Presets</h3>
+        <div class="control-group">
+            <button onclick="setLightingPreset('day')">☀️ Day</button>
+            <button onclick="setLightingPreset('night')">🌙 Night</button>
+            <button onclick="setLightingPreset('sunset')">🌅 Sunset</button>
+            <button onclick="setLightingPreset('indoor')">🏠 Indoor</button>
+            <button onclick="setLightingPreset('dramatic')">🎭 Dramatic</button>
+            <button onclick="setLightingPreset('studio')">🎬 Studio</button>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Sun Intensity</label>
+                    <span class="value-display" id="sunIntensity">0.8</span>
+                </div>
+                <input type="range" id="sunIntensitySlider" min="0" max="2" step="0.1" value="0.8"
+                       oninput="updateSunIntensity(this.value)">
+            </div>
+        </div>
+
+        <!-- [SHD] Shadows -->
+        <h3>🌑 Shadow System</h3>
+        <div class="control-group">
+            <label>Quality Level</label>
+            <button onclick="setShadowQuality('low')">⚡ Low (Fast)</button>
+            <button onclick="setShadowQuality('medium')">⚖️ Medium</button>
+            <button onclick="setShadowQuality('high')">💎 High</button>
+            <button onclick="setShadowQuality('ultra')">🔮 Ultra</button>
+        </div>
+
+        <div class="control-group">
+            <label>Shadow Type</label>
+            <button onclick="setShadowType('hard')">Hard Shadows</button>
+            <button onclick="setShadowType('soft')">Soft Shadows (PCF)</button>
+            <button onclick="setShadowType('advanced')">Advanced (Blur)</button>
+        </div>
+
+        <div class="control-group">
+            <button onclick="toggleShadows()">🔆 Toggle Shadows On/Off</button>
+        </div>
+
+        <!-- [MAT] Materials -->
+        <h3>🎨 Material Gallery</h3>
+        <div class="control-group">
+            <label>Apply to Selected Object</label>
+            <div class="material-grid">
+                <button onclick="applyMaterial('wood')">🪵 Wood</button>
+                <button onclick="applyMaterial('metal')">⚙️ Metal</button>
+                <button onclick="applyMaterial('gold')">🥇 Gold</button>
+                <button onclick="applyMaterial('silver')">⚪ Silver</button>
+                <button onclick="applyMaterial('copper')">🟠 Copper</button>
+                <button onclick="applyMaterial('glass')">💎 Glass</button>
+                <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
+                <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
+                <button onclick="applyMaterial('stone')">🪨 Stone</button>
+                <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
+                <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
+                <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
+                <button onclick="applyMaterial('emissive')">✨ Emissive</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Metallic (PBR)</label>
+                    <span class="value-display" id="metallic">0.0</span>
+                </div>
+                <input type="range" id="metallicSlider" min="0" max="1" step="0.1" value="0"
+                       oninput="updateMetallic(this.value)">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Roughness (PBR)</label>
+                    <span class="value-display" id="roughness">0.5</span>
+                </div>
+                <input type="range" id="roughnessSlider" min="0" max="1" step="0.1" value="0.5"
+                       oninput="updateRoughness(this.value)">
+            </div>
+        </div>
+
+        <!-- Object Selection -->
+        <h3>🎯 Object Selection</h3>
+        <div class="control-group">
+            <button onclick="selectObject('sphere')">🔮 Select Sphere</button>
+            <button onclick="selectObject('cube')">📦 Select Cube</button>
+            <button onclick="selectObject('cylinder')">🛢️ Select Cylinder</button>
+        </div>
+    </div>
+
+    <!-- Load Babylon.js -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+
+    <!-- Load Engine and Plugins -->
+    <script type="module">
+        // [ENG.1] Import core
+        import BabylonEngine from '../src/core/BabylonEngine.js';
+        import ConfigLoader from '../src/config/ConfigLoader.js';
+
+        // [PLG.1] Import Phase 1 plugins (Movement)
+        import MovementPlugin from '../src/plugins/MovementPlugin.js';
+        import KeyboardMovement from '../src/movement/KeyboardMovement.js';
+        import ClickToMoveMovement from '../src/movement/ClickToMoveMovement.js';
+
+        // [PLG.1] Import Phase 2 plugins
+        import GroundPlugin from '../src/plugins/GroundPlugin.js';
+        import LightingPlugin from '../src/plugins/LightingPlugin.js';
+        import ShadowPlugin from '../src/plugins/ShadowPlugin.js';
+        import MaterialPlugin from '../src/plugins/MaterialPlugin.js';
+
+        // [ENG.1.1] Global references
+        window.engine = null;
+        window.scene = null;
+        window.selectedObject = null;
+        window.demoObjects = {
+            sphere: null,
+            cube: null,
+            cylinder: null
+        };
+
+        // [!ENG.1] Initialize
+        async function init() {
+            console.log('[DEMO] Initializing Phase 2 Visual Enhancement Demo');
+
+            // [CFG.1] Load config
+            const config = await ConfigLoader.load('../config/engine-config.json');
+
+            // [ENG.1.2] Create engine
+            const canvas = document.getElementById('renderCanvas');
+            window.engine = new BabylonEngine(canvas, config);
+
+            // [PLG.2] Register Phase 1 plugins (Movement)
+            console.log('[DEMO] Registering Movement plugin...');
+            window.engine.registerPlugin('movement', new MovementPlugin());
+
+            // [PLG.2] Register Phase 2 plugins
+            console.log('[DEMO] Registering Phase 2 plugins...');
+            window.engine.registerPlugin('ground', new GroundPlugin());
+            window.engine.registerPlugin('lighting', new LightingPlugin());
+            window.engine.registerPlugin('shadow', new ShadowPlugin());
+            window.engine.registerPlugin('material', new MaterialPlugin());
+
+            // [ENG.1.3] Start engine
+            await window.engine.start();
+
+            window.scene = window.engine.scene;
+
+            // [DEMO.1] Setup scene
+            setupScene();
+
+            // [DEMO.2] Setup events
+            setupEventListeners();
+
+            // [DEMO.3] Start info updates
+            startInfoUpdates();
+
+            console.log('[DEMO] Phase 2 demo ready! 🚀');
+        }
+
+        // [DEMO.1] Setup scene
+        function setupScene() {
+            const scene = window.scene;
+            const groundPlugin = window.engine.getPlugin('ground');
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            const materialPlugin = window.engine.getPlugin('material');
+
+            console.log('[DEMO.1] Setting up Phase 2 scene...');
+
+            // [GRD.1] Create ground
+            groundPlugin.createGround('plane', {
+                width: 50,
+                height: 50,
+                subdivisions: 32
+            });
+
+            const ground = groundPlugin.getGround();
+
+            // [COL] Enable ground collision
+            ground.checkCollisions = true;
+
+            // [GRD.5] Ground color
+            groundPlugin.setColor('#5a7c4a');
+
+            // [SHD.4] Ground receives shadows
+            shadowPlugin.enableReceiveShadows(ground);
+
+            // [LGT.2] Apply day lighting preset
+            lightingPlugin.usePreset('day');
+
+            // [SHD.1] Create shadows for directional light
+            const sunLight = lightingPlugin.getLight('daySun');
+            if (sunLight) {
+                shadowPlugin.createShadowGenerator('daySun', { light: sunLight });
+            }
+
+            // [DEMO.1.1] Create demo objects
+            // Sphere
+            window.demoObjects.sphere = BABYLON.MeshBuilder.CreateSphere(
+                'sphere',
+                { diameter: 3, segments: 32 },
+                scene
+            );
+            window.demoObjects.sphere.position = new BABYLON.Vector3(-8, 2, 0);
+
+            // Cube
+            window.demoObjects.cube = BABYLON.MeshBuilder.CreateBox(
+                'cube',
+                { size: 3 },
+                scene
+            );
+            window.demoObjects.cube.position = new BABYLON.Vector3(0, 2, 0);
+
+            // Cylinder
+            window.demoObjects.cylinder = BABYLON.MeshBuilder.CreateCylinder(
+                'cylinder',
+                { diameter: 2.5, height: 4, tessellation: 32 },
+                scene
+            );
+            window.demoObjects.cylinder.position = new BABYLON.Vector3(8, 2.5, 0);
+
+            // [MAT.5] Apply initial materials
+            const goldMat = materialPlugin.usePreset('gold');
+            const silverMat = materialPlugin.usePreset('silver');
+            const copperMat = materialPlugin.usePreset('copper');
+
+            materialPlugin.applyMaterial(window.demoObjects.sphere, goldMat);
+            materialPlugin.applyMaterial(window.demoObjects.cube, silverMat);
+            materialPlugin.applyMaterial(window.demoObjects.cylinder, copperMat);
+
+            // [SHD.4] Objects cast and receive shadows
+            Object.values(window.demoObjects).forEach(obj => {
+                shadowPlugin.enableCastShadows(obj);
+                shadowPlugin.enableReceiveShadows(obj);
+            });
+
+            // [DEMO.1.2] Set default selected object
+            window.selectedObject = window.demoObjects.cube;
+
+            // [CAM] Create camera (using engine's scene)
+            const camera = new BABYLON.UniversalCamera(
+                'camera',
+                new BABYLON.Vector3(0, 8, -20),
+                scene
+            );
+            camera.setTarget(BABYLON.Vector3.Zero());
+
+            // Get canvas from scene's engine
+            const canvas = scene.getEngine().getRenderingCanvas();
+            camera.attachControl(canvas, true);
+            camera.speed = 0.5;
+            camera.angularSensibility = 3000;
+
+            // [COL] Enable camera collision to prevent falling off edges
+            camera.checkCollisions = true;
+            camera.applyGravity = true;
+            camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1); // Collision shape
+
+            // [MOV] Activate click-to-move
+            // CRITICAL: MovementPlugin only activates ONE mode at a time
+            // Camera already has keyboard controls via attachControl()
+            // So we manually activate click-to-move mode for clicking
+            const movementPlugin = window.engine.getPlugin('movement');
+            if (movementPlugin) {
+                // Get the click-to-move mode instance
+                const clickToMove = movementPlugin.modes.get('clickToMove');
+                if (clickToMove) {
+                    // Activate it manually (this registers the click observer)
+                    clickToMove.activate(camera, scene);
+                    console.log('[MOV] Click-to-move manually activated');
+
+                    // [MOV] Manual update loop for click-to-move
+                    // MovementPlugin.update() only processes activeMode (keyboard)
+                    // So we need a separate update loop for click-to-move movement
+                    scene.onBeforeRenderObservable.add(() => {
+                        if (clickToMove.enabled && clickToMove.target) {
+                            const velocity = clickToMove.getVelocity();
+                            if (velocity.length() > 0) {
+                                camera.position.addInPlace(velocity);
+                            }
+                        }
+                    });
+                    console.log('[MOV] Click-to-move update loop registered');
+                } else {
+                    console.warn('[MOV] Click-to-move mode not found');
+                }
+            }
+
+            console.log('[DEMO.1] Scene setup complete!');
+        }
+
+        // [DEMO.2] Setup event listeners
+        function setupEventListeners() {
+            const events = window.engine.events;
+
+            events.on('ground:rotation:changed', (data) => {
+                console.log('[DEMO.2] Ground rotation changed');
+                updateInfoDisplay();
+            });
+
+            events.on('lighting:preset:changed', (data) => {
+                console.log('[DEMO.2] Lighting preset:', data.preset);
+                updateInfoDisplay();
+            });
+
+            events.on('shadow:quality:changed', (data) => {
+                console.log('[DEMO.2] Shadow quality:', data.quality);
+                updateInfoDisplay();
+            });
+
+            events.on('render:frame', (data) => {
+                if (Math.floor(data.fps) !== lastFPS) {
+                    lastFPS = Math.floor(data.fps);
+                    document.getElementById('fps').textContent = lastFPS;
+                }
+            });
+        }
+
+        let lastFPS = 0;
+
+        // [DEMO.3] Update info display
+        function startInfoUpdates() {
+            setInterval(updateInfoDisplay, 200);
+        }
+
+        function updateInfoDisplay() {
+            const groundPlugin = window.engine.getPlugin('ground');
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            const shadowPlugin = window.engine.getPlugin('shadow');
+
+            // Update ground rotation
+            const rotation = groundPlugin.getRotation();
+            const rotDeg = {
+                x: (rotation.x * 180 / Math.PI).toFixed(0),
+                y: (rotation.y * 180 / Math.PI).toFixed(0),
+                z: (rotation.z * 180 / Math.PI).toFixed(0)
+            };
+
+            if (rotDeg.x == 0 && rotDeg.y == 0 && rotDeg.z == 0) {
+                document.getElementById('groundRotation').textContent = 'Horizontal';
+            } else if (Math.abs(rotDeg.x - 90) < 5) {
+                document.getElementById('groundRotation').textContent = 'Vertical';
+            } else {
+                document.getElementById('groundRotation').textContent =
+                    `(${rotDeg.x}°, ${rotDeg.y}°, ${rotDeg.z}°)`;
+            }
+
+            // Update lighting
+            const preset = lightingPlugin.getCurrentPreset();
+            document.getElementById('lightingPreset').textContent =
+                preset.charAt(0).toUpperCase() + preset.slice(1);
+
+            // Update shadow quality
+            const quality = shadowPlugin.getQuality();
+            document.getElementById('shadowQuality').textContent =
+                quality.charAt(0).toUpperCase() + quality.slice(1);
+
+            // Update object count
+            document.getElementById('objectCount').textContent =
+                Object.keys(window.demoObjects).length + 1; // +1 for ground
+        }
+
+        // [UI.5] Global control functions
+        window.setGroundRotationPreset = function(preset) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            groundPlugin.useRotationPreset(preset);
+
+            // Update sliders
+            const rotation = groundPlugin.getRotation();
+            document.getElementById('rotXSlider').value = rotation.x * 180 / Math.PI;
+            document.getElementById('rotYSlider').value = rotation.y * 180 / Math.PI;
+            document.getElementById('rotZSlider').value = rotation.z * 180 / Math.PI;
+
+            updateGroundRotation();
+
+            console.log(`[UI] Ground rotation preset: ${preset}`);
+        };
+
+        window.updateGroundRotation = function() {
+            const groundPlugin = window.engine.getPlugin('ground');
+
+            const x = parseFloat(document.getElementById('rotXSlider').value);
+            const y = parseFloat(document.getElementById('rotYSlider').value);
+            const z = parseFloat(document.getElementById('rotZSlider').value);
+
+            // Convert degrees to radians
+            const xRad = x * Math.PI / 180;
+            const yRad = y * Math.PI / 180;
+            const zRad = z * Math.PI / 180;
+
+            groundPlugin.setRotation(xRad, yRad, zRad);
+
+            // Update displays
+            document.getElementById('rotX').textContent = `${x.toFixed(0)}°`;
+            document.getElementById('rotY').textContent = `${y.toFixed(0)}°`;
+            document.getElementById('rotZ').textContent = `${z.toFixed(0)}°`;
+        };
+
+        window.setEdgeBehavior = function(behavior) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            groundPlugin.setEdgeBehavior(behavior);
+            console.log(`[UI] Edge behavior: ${behavior}`);
+        };
+
+        window.toggleRotateFullScene = function() {
+            const groundPlugin = window.engine.getPlugin('ground');
+            const checkbox = document.getElementById('rotateFullScene');
+            groundPlugin.setRotateFullScene(checkbox.checked);
+            console.log(`[UI] Rotate full scene: ${checkbox.checked}`);
+        };
+
+        window.setLightingPreset = function(preset) {
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            const shadowPlugin = window.engine.getPlugin('shadow');
+
+            lightingPlugin.usePreset(preset);
+
+            // Recreate shadows for new lights
+            setTimeout(() => {
+                const lights = lightingPlugin.getAllLights();
+                lights.forEach(lightData => {
+                    if (lightData.type === 'directional' || lightData.type === 'spot') {
+                        const existing = shadowPlugin.getShadowGenerator(lightData.name);
+                        if (!existing) {
+                            shadowPlugin.createShadowGenerator(lightData.name, {
+                                light: lightData.light
+                            });
+
+                            // Add objects to new shadow generator
+                            Object.values(window.demoObjects).forEach(obj => {
+                                shadowPlugin.enableCastShadows(obj);
+                            });
+                        }
+                    }
+                });
+            }, 100);
+
+            console.log(`[UI] Lighting preset: ${preset}`);
+        };
+
+        window.updateSunIntensity = function(value) {
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            const lights = lightingPlugin.getAllLights();
+
+            lights.forEach(lightData => {
+                if (lightData.type === 'directional') {
+                    lightingPlugin.setLightIntensity(lightData.name, parseFloat(value));
+                }
+            });
+
+            document.getElementById('sunIntensity').textContent = parseFloat(value).toFixed(1);
+        };
+
+        window.setShadowQuality = function(quality) {
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            shadowPlugin.setQuality(quality);
+            console.log(`[UI] Shadow quality: ${quality}`);
+        };
+
+        window.setShadowType = function(type) {
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            shadowPlugin.setShadowType(type);
+            console.log(`[UI] Shadow type: ${type}`);
+        };
+
+        let shadowsEnabled = true;
+        window.toggleShadows = function() {
+            const shadowPlugin = window.engine.getPlugin('shadow');
+
+            if (shadowsEnabled) {
+                shadowPlugin.disableShadowsGlobally();
+                shadowsEnabled = false;
+                console.log('[UI] Shadows disabled');
+            } else {
+                shadowPlugin.enableShadowsGlobally();
+                shadowsEnabled = true;
+                console.log('[UI] Shadows enabled');
+            }
+        };
+
+        // [UI.MODE] Edit/View Mode Toggle
+        // USER REQUIREMENT: Toggle between editing and clean viewing
+        let currentMode = 'edit'; // Default to view mode as per requirement
+        window.toggleMode = function() {
+            const body = document.body;
+            const btn = document.getElementById('modeToggleBtn');
+
+            if (currentMode === 'edit') {
+                // Switch to view mode
+                body.classList.add('view-mode');
+                btn.textContent = '📝 Switch to Edit Mode';
+                currentMode = 'view';
+                console.log('[UI] Switched to View Mode - Clean experience');
+            } else {
+                // Switch to edit mode
+                body.classList.remove('view-mode');
+                btn.textContent = '👁️ Switch to View Mode';
+                currentMode = 'edit';
+                console.log('[UI] Switched to Edit Mode - All controls visible');
+            }
+
+            // Save preference to localStorage
+            localStorage.setItem('3dcms_mode', currentMode);
+        };
+
+        // [UI.MODE] Load saved mode preference on startup
+        window.addEventListener('load', () => {
+            const savedMode = localStorage.getItem('3dcms_mode') || 'view'; // Default view mode
+            if (savedMode === 'view') {
+                // Start in view mode
+                setTimeout(() => {
+                    window.toggleMode();
+                }, 100);
+            }
+        });
+
+        window.applyMaterial = function(presetName) {
+            if (!window.selectedObject) {
+                console.warn('[UI] No object selected');
+                return;
+            }
+
+            const materialPlugin = window.engine.getPlugin('material');
+            const material = materialPlugin.usePreset(presetName);
+            materialPlugin.applyMaterial(window.selectedObject, material);
+
+            console.log(`[UI] Applied ${presetName} to ${window.selectedObject.name}`);
+        };
+
+        window.updateMetallic = function(value) {
+            if (!window.selectedObject || !window.selectedObject.material) {
+                return;
+            }
+
+            const materialPlugin = window.engine.getPlugin('material');
+            materialPlugin.setMetallic(window.selectedObject.material, parseFloat(value));
+
+            document.getElementById('metallic').textContent = parseFloat(value).toFixed(1);
+        };
+
+        window.updateRoughness = function(value) {
+            if (!window.selectedObject || !window.selectedObject.material) {
+                return;
+            }
+
+            const materialPlugin = window.engine.getPlugin('material');
+            materialPlugin.setRoughness(window.selectedObject.material, parseFloat(value));
+
+            document.getElementById('roughness').textContent = parseFloat(value).toFixed(1);
+        };
+
+        window.selectObject = function(objectName) {
+            window.selectedObject = window.demoObjects[objectName];
+            console.log(`[UI] Selected: ${objectName}`);
+
+            // Highlight selected object (brief scale animation)
+            const obj = window.selectedObject;
+            const originalScale = obj.scaling.clone();
+
+            BABYLON.Animation.CreateAndStartAnimation(
+                'select',
+                obj,
+                'scaling',
+                60,
+                15,
+                originalScale,
+                originalScale.scale(1.1),
+                BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+            );
+
+            setTimeout(() => {
+                BABYLON.Animation.CreateAndStartAnimation(
+                    'deselect',
+                    obj,
+                    'scaling',
+                    60,
+                    15,
+                    obj.scaling,
+                    originalScale,
+                    BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+                );
+            }, 250);
+        };
+
+        // [ENG.1] Start
+        init().catch(error => {
+            console.error('[DEMO] Initialization failed:', error);
+            alert('Failed to initialize demo. Check console for details.');
+        });
+    </script>
+</body>
+</html>

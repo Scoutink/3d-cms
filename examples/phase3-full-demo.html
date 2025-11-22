@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3: Full Integration Demo - 3D CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            outline: none;
+        }
+
+        /* Loading screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-title {
+            font-size: 32px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .loading-subtitle {
+            font-size: 16px;
+            color: #81C784;
+            margin-bottom: 40px;
+        }
+
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #81C784);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* Welcome message */
+        .welcome-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            border: 2px solid #4CAF50;
+            max-width: 600px;
+            z-index: 9999;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-message.hidden {
+            display: none;
+        }
+
+        .welcome-message h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .welcome-message ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .welcome-message li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .welcome-message li:last-child {
+            border-bottom: none;
+        }
+
+        .welcome-message strong {
+            color: #81C784;
+        }
+
+        .welcome-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .welcome-button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        /* Instructions panel (top-left) */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 280px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            z-index: 1000;
+        }
+
+        .instructions h3 {
+            color: #4CAF50;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .instructions li {
+            font-size: 12px;
+            padding: 4px 0;
+            line-height: 1.4;
+        }
+
+        .instructions strong {
+            color: #81C784;
+        }
+
+        /* Toggle button for instructions */
+        .toggle-instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(76, 175, 80, 0.9);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 999;
+            display: none;
+        }
+
+        .toggle-instructions.visible {
+            display: block;
+        }
+
+        /* [UI.MODE] Edit/View Mode Toggle */
+        .mode-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-toggle button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: scale(1.05);
+        }
+
+        /* [UI.MODE] Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 320px;
+            max-width: 350px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 12px;
+            text-align: center;
+        }
+
+        .control-panel h3 {
+            margin: 25px 0 12px 0;
+            font-size: 13px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 18px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #aaa;
+            font-weight: 500;
+        }
+
+        .control-group button {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .control-group button:hover {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .control-group button:active {
+            transform: translateY(0);
+        }
+
+        .control-group button.active {
+            background: linear-gradient(135deg, #81C784, #66BB6A);
+            box-shadow: 0 0 16px rgba(129, 199, 132, 0.6);
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(76, 175, 80, 0.2);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4CAF50;
+            font-weight: bold;
+            float: right;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .slider-container {
+            clear: both;
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* Material Preview Grid */
+        .material-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .material-grid button {
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        /* Scrollbar for control panel */
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: #66BB6A;
+        }
+
+        /* [UI.MODE] View mode - hide edit controls */
+        body.view-mode .control-panel {
+            display: none;
+        }
+
+        body.view-mode .instructions {
+            display: none;
+        }
+
+        /* [UI.PROPS] Properties Panel */
+        .properties-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            padding: 0;
+            border-radius: 8px;
+            width: 280px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            z-index: 1001;
+            display: none; /* Hidden by default */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .properties-panel.visible {
+            display: block;
+        }
+
+        body.view-mode .properties-panel {
+            display: none !important;
+        }
+
+        .properties-header {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 12px 16px;
+            border-bottom: 2px solid rgba(76, 175, 80, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .properties-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #81C784;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .properties-body {
+            padding: 16px;
+        }
+
+        .property-section {
+            margin-bottom: 20px;
+        }
+
+        .property-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-section-title {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .property-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .property-input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .property-input-group:focus-within {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .property-label {
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #999;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .property-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            outline: none;
+        }
+
+        .property-input:focus {
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .object-name-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+
+        .object-name-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .property-hint {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            font-style: italic;
+        }
+    </style>
+    <!-- Babylon.js -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+</head>
+<body>
+    <!-- Canvas -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- [UI.PROPS] Properties Panel -->
+    <div class="properties-panel" id="propertiesPanel">
+        <div class="properties-header">
+            <h3>📋 Properties</h3>
+        </div>
+        <div class="properties-body">
+            <!-- Object Name -->
+            <input type="text"
+                   class="object-name-input"
+                   id="propObjectName"
+                   placeholder="Object Name"
+                   disabled>
+
+            <!-- Position -->
+            <div class="property-section">
+                <div class="property-section-title">Position</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosX"
+                               step="0.1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosY"
+                               step="0.1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propPosZ"
+                               step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rotation -->
+            <div class="property-section">
+                <div class="property-section-title">Rotation</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotX"
+                               step="1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotY"
+                               step="1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propRotZ"
+                               step="1">
+                    </div>
+                </div>
+                <div class="property-hint">Values in degrees</div>
+            </div>
+
+            <!-- Scale -->
+            <div class="property-section">
+                <div class="property-section-title">Scale</div>
+                <div class="property-row">
+                    <div class="property-input-group">
+                        <span class="property-label">X</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleX"
+                               step="0.1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Y</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleY"
+                               step="0.1">
+                    </div>
+                    <div class="property-input-group">
+                        <span class="property-label">Z</span>
+                        <input type="number"
+                               class="property-input"
+                               id="propScaleZ"
+                               step="0.1">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-title">🚀 Phase 3 Full Demo</div>
+        <div class="loading-subtitle">All 4 Advanced Plugins</div>
+        <div class="loading-progress">
+            <div class="loading-bar" id="loadingBar"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Initializing...</div>
+    </div>
+
+    <!-- Welcome message -->
+    <div class="welcome-message" id="welcomeMessage">
+        <h2>🎮 Welcome to Phase 3 Demo!</h2>
+        <p>This demo showcases all advanced plugins working together:</p>
+        <ul>
+            <li><strong>🌤️ SkyPlugin:</strong> Dynamic skyboxes and environment</li>
+            <li><strong>📦 AssetPlugin:</strong> Loading models and textures</li>
+            <li><strong>🖱️ InteractionPlugin:</strong> Hover, click, drag, select</li>
+            <li><strong>🎨 UIPlugin:</strong> HUD, panels, tooltips, buttons</li>
+            <li><strong>⚡ PerformancePlugin:</strong> Real-time optimization</li>
+        </ul>
+        <p style="margin-top: 15px; font-size: 14px; color: #999;">
+            <strong>Controls:</strong> WASD to move, Mouse to look, Click objects to select<br>
+            <strong>Tab Key:</strong> Toggle Edit/View Mode<br>
+            <strong>Edit Objects:</strong> Click any object to see its Properties Panel (left side)
+        </p>
+        <button class="welcome-button" onclick="startDemo()">🚀 Start Demo</button>
+    </div>
+
+    <!-- [UI.MODE] Mode Toggle Button -->
+    <div class="mode-toggle">
+        <button id="modeToggleBtn" onclick="toggleMode()">
+            👁️ Switch to View Mode (Tab)
+        </button>
+    </div>
+
+    <!-- [UI.MODE] Control Panel (Edit Mode Only) -->
+    <div class="control-panel">
+        <h2>⚙️ Edit Controls</h2>
+
+        <!-- [HINT] Usage Instructions -->
+        <div class="control-group" style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4CAF50;">
+            <p style="margin: 0; font-size: 12px; color: #81C784; line-height: 1.6;">
+                💡 <strong>Tip:</strong> Click any object to see its properties panel on the left.
+                Use the colored arrows to move/rotate objects.
+            </p>
+        </div>
+
+        <!-- [GRD] Ground Rotation -->
+        <h3>🌍 Ground Rotation</h3>
+        <div class="control-group">
+            <label>Quick Presets</label>
+            <button onclick="setGroundRotationPreset('horizontal')">➡️ Horizontal</button>
+            <button onclick="setGroundRotationPreset('vertical')">⬆️ Vertical</button>
+            <button onclick="setGroundRotationPreset('diagonal45')">↗️ Diagonal 45°</button>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>X-Axis Tilt</label>
+                    <span class="value-display" id="rotX">0°</span>
+                </div>
+                <input type="range" id="rotXSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Z-Axis Tilt</label>
+                    <span class="value-display" id="rotZ">0°</span>
+                </div>
+                <input type="range" id="rotZSlider" min="-180" max="180" value="0"
+                       oninput="updateGroundRotation()">
+            </div>
+        </div>
+
+        <!-- [GRD] Ground Textures -->
+        <h3>🎨 Ground Textures</h3>
+        <div class="control-group">
+            <label>Texture Presets</label>
+            <div class="material-grid">
+                <button onclick="setGroundTexture('grass')">🌿 Grass</button>
+                <button onclick="setGroundTexture('dirt')">🟤 Dirt</button>
+                <button onclick="setGroundTexture('stone')">🪨 Stone</button>
+                <button onclick="setGroundTexture('sand')">🏖️ Sand</button>
+                <button onclick="setGroundTexture('concrete')">⬜ Concrete</button>
+                <button onclick="setGroundTexture('wood')">🪵 Wood</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>Texture Tiling</label>
+                    <span class="value-display" id="textureTiling">10x</span>
+                </div>
+                <input type="range" id="textureTilingSlider" min="1" max="20" value="10"
+                       oninput="updateTextureTiling(this.value)">
+            </div>
+        </div>
+
+        <!-- [GRD] Ground Edge Behavior -->
+        <h3>🚧 Ground Edge Behavior</h3>
+        <div class="control-group">
+            <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
+            <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+        </div>
+
+        <!-- [IGR] Infinite Terrain -->
+        <h3>♾️ Infinite Terrain</h3>
+        <div class="control-group">
+            <label>Terrain Mode</label>
+            <button onclick="toggleInfiniteTerrain()" id="terrainModeBtn">🌍 Enable Infinite Terrain</button>
+        </div>
+
+        <div class="control-group" id="infiniteTerrainControls" style="display: none;">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label>View Distance</label>
+                    <span class="value-display" id="viewDistance">3 chunks</span>
+                </div>
+                <input type="range" id="viewDistanceSlider" min="1" max="5" value="3"
+                       oninput="updateViewDistance(this.value)">
+            </div>
+
+            <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="heightVariationCheck" onchange="toggleHeightVariation(this.checked)"
+                           style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+                    <span>🏔️ Enable Height Variation (Hills)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- [SKY] Sky System -->
+        <h3>🌤️ Sky & Environment</h3>
+        <div class="control-group">
+            <label>Sky Presets</label>
+            <button onclick="setSkyPreset('day')">☀️ Clear Day</button>
+            <button onclick="setSkyPreset('sunset')">🌅 Sunset</button>
+            <button onclick="setSkyPreset('night')">🌙 Night</button>
+            <button onclick="setSkyPreset('cloudy')">☁️ Cloudy</button>
+            <button onclick="setSkyPreset('space')">🌌 Space</button>
+        </div>
+
+        <!-- [LGT] Lighting -->
+        <h3>💡 Lighting Presets</h3>
+        <div class="control-group">
+            <button onclick="setLightingPreset('day')">☀️ Day</button>
+            <button onclick="setLightingPreset('night')">🌙 Night</button>
+            <button onclick="setLightingPreset('sunset')">🌅 Sunset</button>
+            <button onclick="setLightingPreset('indoor')">🏠 Indoor</button>
+            <button onclick="setLightingPreset('dramatic')">🎭 Dramatic</button>
+            <button onclick="setLightingPreset('studio')">🎬 Studio</button>
+        </div>
+
+        <!-- [SHD] Shadows -->
+        <h3>🌑 Shadow System</h3>
+        <div class="control-group">
+            <label>Quality Level</label>
+            <button onclick="setShadowQuality('low')">⚡ Low</button>
+            <button onclick="setShadowQuality('medium')">⚖️ Medium</button>
+            <button onclick="setShadowQuality('high')">💎 High</button>
+            <button onclick="setShadowQuality('ultra')">🔮 Ultra</button>
+        </div>
+
+        <!-- [MAT] Materials -->
+        <h3>🎨 Material Gallery</h3>
+        <div class="control-group">
+            <label>Click object then apply material</label>
+            <div class="material-grid">
+                <button onclick="applyMaterial('wood')">🪵 Wood</button>
+                <button onclick="applyMaterial('metal')">⚙️ Metal</button>
+                <button onclick="applyMaterial('gold')">🥇 Gold</button>
+                <button onclick="applyMaterial('silver')">⚪ Silver</button>
+                <button onclick="applyMaterial('copper')">🟠 Copper</button>
+                <button onclick="applyMaterial('glass')">💎 Glass</button>
+                <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
+                <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
+                <button onclick="applyMaterial('stone')">🪨 Stone</button>
+                <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
+                <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
+                <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions" id="instructions">
+        <h3>📋 Controls</h3>
+        <ul>
+            <li><strong>WASD/Arrows:</strong> Move camera</li>
+            <li><strong>Mouse Drag:</strong> Rotate camera</li>
+            <li><strong>Tab:</strong> Toggle Edit/View Mode</li>
+            <li><strong>Hover:</strong> Objects highlight</li>
+            <li><strong>Click:</strong> Select object</li>
+            <li><strong>Drag:</strong> Move objects</li>
+            <li><strong>Ctrl+Click:</strong> Multi-select</li>
+            <li><strong>Right-click:</strong> Context menu</li>
+        </ul>
+        <p style="margin-top: 10px; font-size: 11px; color: #999; line-height: 1.4;">
+            <strong>Edit Mode:</strong> Full control panel visible<br>
+            <strong>View Mode:</strong> Clean viewing experience
+        </p>
+    </div>
+
+    <!-- Toggle button -->
+    <button class="toggle-instructions" id="toggleBtn" onclick="toggleInstructions()">ℹ️</button>
+
+    <script type="module">
+        // [ENG.1] Import core
+        import BabylonEngine from '../src/core/BabylonEngine.js';
+        import ConfigLoader from '../src/config/ConfigLoader.js';
+
+        // [PLG.1] Import Phase 1-2 plugins
+        import GroundPlugin from '../src/plugins/GroundPlugin.js';
+        import InfiniteGroundPlugin from '../src/plugins/InfiniteGroundPlugin.js';
+        import LightingPlugin from '../src/plugins/LightingPlugin.js';
+        import ShadowPlugin from '../src/plugins/ShadowPlugin.js';
+        import MaterialPlugin from '../src/plugins/MaterialPlugin.js';
+        import SkyPlugin from '../src/plugins/SkyPlugin.js';
+
+        // [PLG.2] Import Phase 3 plugins
+        import AssetPlugin from '../src/plugins/AssetPlugin.js';
+        import InteractionPlugin from '../src/plugins/InteractionPlugin.js';
+        import UIPlugin from '../src/plugins/UIPlugin.js';
+        import PerformancePlugin from '../src/plugins/PerformancePlugin.js';
+
+        // [PLG.3] Import Phase 4 plugins
+        import GizmoPlugin from '../src/plugins/GizmoPlugin.js';
+        import PropertiesPlugin from '../src/plugins/PropertiesPlugin.js';
+
+        // [DEMO] Global references
+        window.engine = null;
+        window.scene = null;
+        window.demoObjects = [];
+        window.selectedObjects = [];
+        window.infiniteTerrainEnabled = false;
+        window.infiniteGroundPlugin = null;
+
+        // [DEMO] Start demo
+        window.startDemo = function() {
+            document.getElementById('welcomeMessage').classList.add('hidden');
+            init();
+        };
+
+        // [DEMO] Toggle instructions
+        window.toggleInstructions = function() {
+            const instructions = document.getElementById('instructions');
+            const btn = document.getElementById('toggleBtn');
+
+            if (instructions.style.display === 'none') {
+                instructions.style.display = 'block';
+                btn.classList.remove('visible');
+            } else {
+                instructions.style.display = 'none';
+                btn.classList.add('visible');
+            }
+        };
+
+        // [UI.MODE] Edit/View Mode Toggle
+        // USER REQUIREMENT: Toggle between editing and clean viewing
+        let currentMode = 'edit'; // Default to edit mode
+        window.toggleMode = function() {
+            const body = document.body;
+            const btn = document.getElementById('modeToggleBtn');
+            const inputManager = window.inputManager;
+
+            if (currentMode === 'edit') {
+                // Switch to view mode
+                body.classList.add('view-mode');
+                btn.textContent = '📝 Switch to Edit Mode (Tab)';
+                currentMode = 'view';
+
+                // Connect to InputManager context switch
+                if (inputManager) {
+                    inputManager.setContext('view');
+                }
+
+                console.log('[UI] Switched to View Mode - Clean experience');
+            } else {
+                // Switch to edit mode
+                body.classList.remove('view-mode');
+                btn.textContent = '👁️ Switch to View Mode (Tab)';
+                currentMode = 'edit';
+
+                // Connect to InputManager context switch
+                if (inputManager) {
+                    inputManager.setContext('edit');
+                }
+
+                console.log('[UI] Switched to Edit Mode - All controls visible');
+            }
+
+            // Save preference to localStorage
+            localStorage.setItem('3dcms_mode', currentMode);
+        };
+
+        // [UI.MODE] Tab key listener for mode toggle
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                event.preventDefault(); // Prevent default tab behavior
+                toggleMode();
+            }
+        });
+
+        // [UI.GIZ] Gizmo Mode Control (W/E/R shortcuts)
+        window.setGizmoMode = function(mode) {
+            const gizmoPlugin = window.gizmoPlugin;
+            if (!gizmoPlugin) {
+                console.warn('[UI.GIZ] GizmoPlugin not initialized yet');
+                return;
+            }
+
+            // Set the gizmo mode
+            gizmoPlugin.setMode(mode);
+
+            const modeNames = {
+                'position': 'Move',
+                'rotation': 'Rotate',
+                'scale': 'Scale',
+                'none': 'None'
+            };
+
+            console.log(`[UI.GIZ] Transform tool: ${modeNames[mode] || mode} (colored arrows/circles)`);
+        };
+
+        // [UI.GIZ] Keyboard shortcuts for gizmo modes (W/E/R keys)
+        document.addEventListener('keydown', (event) => {
+            // Only in edit mode
+            if (currentMode !== 'edit') return;
+
+            // Prevent if typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            switch (event.key.toLowerCase()) {
+                case 'w':
+                    event.preventDefault();
+                    setGizmoMode('position');
+                    break;
+                case 'e':
+                    event.preventDefault();
+                    setGizmoMode('rotation');
+                    break;
+                case 'r':
+                    event.preventDefault();
+                    setGizmoMode('scale');
+                    break;
+            }
+        });
+
+        // [UI.PROPS] Properties Panel is now handled by PropertiesPlugin.js
+        // (No inline code needed here - plugin handles everything)
+
+        // [UI.CONTROLS] Ground Rotation Preset
+        window.setGroundRotationPreset = function(preset) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            const presets = {
+                horizontal: { x: 0, y: 0, z: 0 },
+                vertical: { x: Math.PI / 2, y: 0, z: 0 },
+                diagonal45: { x: Math.PI / 4, y: 0, z: Math.PI / 4 }
+            };
+
+            const rotation = presets[preset];
+            if (rotation) {
+                groundPlugin.setRotation(rotation);
+
+                // Update sliders
+                document.getElementById('rotXSlider').value = Math.round(rotation.x * 180 / Math.PI);
+                document.getElementById('rotZSlider').value = Math.round(rotation.z * 180 / Math.PI);
+                document.getElementById('rotX').textContent = Math.round(rotation.x * 180 / Math.PI) + '°';
+                document.getElementById('rotZ').textContent = Math.round(rotation.z * 180 / Math.PI) + '°';
+
+                console.log(`[UI] Ground rotation set to ${preset}`);
+            }
+        };
+
+        // [UI.CONTROLS] Ground Rotation from sliders
+        window.updateGroundRotation = function() {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            const rotX = parseFloat(document.getElementById('rotXSlider').value) * Math.PI / 180;
+            const rotZ = parseFloat(document.getElementById('rotZSlider').value) * Math.PI / 180;
+
+            groundPlugin.setRotation({ x: rotX, y: 0, z: rotZ });
+
+            document.getElementById('rotX').textContent = Math.round(rotX * 180 / Math.PI) + '°';
+            document.getElementById('rotZ').textContent = Math.round(rotZ * 180 / Math.PI) + '°';
+        };
+
+        // [UI.CONTROLS] Edge Behavior
+        window.setEdgeBehavior = function(behavior) {
+            const groundPlugin = window.engine.getPlugin('ground');
+            if (!groundPlugin) return;
+
+            groundPlugin.setEdgeBehavior(behavior);
+            console.log(`[UI] Edge behavior set to: ${behavior}`);
+        };
+
+        // [UI.CONTROLS] Ground Texture Preset
+        window.setGroundTexture = function(presetName) {
+            // Apply to whichever terrain system is active
+            if (window.infiniteTerrainEnabled && window.infiniteGroundPlugin) {
+                window.infiniteGroundPlugin.useTexturePreset(presetName);
+                console.log(`[UI] Infinite terrain texture: ${presetName}`);
+            } else {
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.useTexturePreset(presetName);
+                    console.log(`[UI] Ground texture: ${presetName}`);
+                }
+            }
+        };
+
+        // [UI.CONTROLS] Texture Tiling
+        window.updateTextureTiling = function(value) {
+            const tiling = parseFloat(value);
+            document.getElementById('textureTiling').textContent = tiling.toFixed(0) + 'x';
+
+            // Apply to whichever terrain system is active
+            if (window.infiniteTerrainEnabled && window.infiniteGroundPlugin) {
+                window.infiniteGroundPlugin.setTextureTiling(tiling, tiling);
+            } else {
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.setTextureTiling(tiling, tiling);
+                }
+            }
+        };
+
+        // [UI.CONTROLS] Toggle Infinite Terrain
+        window.toggleInfiniteTerrain = function() {
+            if (!window.engine || !window.scene) return;
+
+            const btn = document.getElementById('terrainModeBtn');
+            const controls = document.getElementById('infiniteTerrainControls');
+
+            if (!window.infiniteTerrainEnabled) {
+                // Enable infinite terrain
+                console.log('[UI] Enabling infinite terrain...');
+
+                // Dispose finite ground
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin && groundPlugin.ground) {
+                    groundPlugin.ground.dispose();
+                }
+
+                // Create and register infinite ground plugin
+                window.infiniteGroundPlugin = new InfiniteGroundPlugin();
+                window.engine.registerPlugin('infiniteGround', window.infiniteGroundPlugin);
+
+                // Initialize and start
+                const config = {
+                    infiniteGround: {
+                        chunkSize: 50,
+                        viewDistance: 3,
+                        height: 0,
+                        heightVariation: false,
+                        subdivisions: 10,
+                        material: {
+                            diffuse: 'https://playground.babylonjs.com/textures/grass.png',
+                            normal: 'https://playground.babylonjs.com/textures/grassn.png',
+                            tiling: { u: 10, v: 10 }
+                        }
+                    }
+                };
+                window.infiniteGroundPlugin.init(window.scene, window.engine.events, config);
+                window.infiniteGroundPlugin.start();
+
+                // Update UI
+                btn.textContent = '🟢 Disable Infinite Terrain';
+                btn.classList.add('active');
+                controls.style.display = 'block';
+                window.infiniteTerrainEnabled = true;
+
+                console.log('[UI] Infinite terrain enabled');
+            } else {
+                // Disable infinite terrain
+                console.log('[UI] Disabling infinite terrain...');
+
+                // Dispose infinite ground
+                if (window.infiniteGroundPlugin) {
+                    window.infiniteGroundPlugin.dispose();
+                    window.engine.plugins.delete('infiniteGround');
+                    window.infiniteGroundPlugin = null;
+                }
+
+                // Recreate finite ground
+                const groundPlugin = window.engine.getPlugin('ground');
+                if (groundPlugin) {
+                    groundPlugin.createGround('plane');
+                }
+
+                // Update UI
+                btn.textContent = '🌍 Enable Infinite Terrain';
+                btn.classList.remove('active');
+                controls.style.display = 'none';
+                window.infiniteTerrainEnabled = false;
+
+                console.log('[UI] Infinite terrain disabled');
+            }
+        };
+
+        // [UI.CONTROLS] Update View Distance
+        window.updateViewDistance = function(value) {
+            if (!window.infiniteGroundPlugin) return;
+
+            const distance = parseInt(value);
+            window.infiniteGroundPlugin.setViewDistance(distance);
+
+            document.getElementById('viewDistance').textContent = distance + ' chunks';
+            console.log(`[UI] View distance: ${distance} chunks`);
+        };
+
+        // [UI.CONTROLS] Toggle Height Variation
+        window.toggleHeightVariation = function(enabled) {
+            if (!window.infiniteGroundPlugin) return;
+
+            window.infiniteGroundPlugin.setHeightVariation(enabled, 5);
+            console.log(`[UI] Height variation: ${enabled ? 'enabled' : 'disabled'}`);
+
+            // Force chunk reload to apply height changes
+            if (window.infiniteGroundPlugin.chunks) {
+                // Dispose all chunks and reload
+                window.infiniteGroundPlugin.chunks.forEach((chunk, key) => {
+                    const [x, z] = key.split(',').map(Number);
+                    window.infiniteGroundPlugin.unloadChunk(x, z);
+                });
+                window.infiniteGroundPlugin.chunks.clear();
+                window.infiniteGroundPlugin.updateChunks(true);
+            }
+        };
+
+        // [UI.CONTROLS] Sky Preset
+        window.setSkyPreset = function(preset) {
+            const skyPlugin = window.engine.getPlugin('sky');
+            if (!skyPlugin) return;
+
+            skyPlugin.usePreset(preset);
+            console.log(`[UI] Sky preset: ${preset}`);
+        };
+
+        // [UI.CONTROLS] Lighting Preset
+        window.setLightingPreset = function(preset) {
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            if (!lightingPlugin) return;
+
+            lightingPlugin.usePreset(preset);
+            console.log(`[UI] Lighting preset: ${preset}`);
+        };
+
+        // [UI.CONTROLS] Shadow Quality
+        window.setShadowQuality = function(quality) {
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            if (!shadowPlugin) return;
+
+            shadowPlugin.useQualityPreset(quality);
+            console.log(`[UI] Shadow quality: ${quality}`);
+        };
+
+        // [UI.CONTROLS] Apply Material
+        window.applyMaterial = function(presetName) {
+            const materialPlugin = window.engine.getPlugin('material');
+            if (!materialPlugin) return;
+
+            // Get selected objects
+            const selectedObjects = window.interactionPlugin.getSelectedMeshes();
+
+            if (selectedObjects.length === 0) {
+                console.warn('[UI] No object selected. Click an object first!');
+                return;
+            }
+
+            // Apply material to all selected objects
+            const material = materialPlugin.usePreset(presetName);
+            selectedObjects.forEach(mesh => {
+                materialPlugin.applyMaterial(mesh, material);
+            });
+
+            console.log(`[UI] Applied ${presetName} to ${selectedObjects.length} object(s)`);
+        };
+
+        // [DEMO] Initialize
+        async function init() {
+            console.log('[DEMO] Initializing Phase 3 Full Demo');
+
+            try {
+                updateLoading(10, 'Loading configuration...');
+
+                // [CFG.1] Load config
+                const config = await ConfigLoader.load('../config/engine-config.json');
+
+                updateLoading(20, 'Creating engine...');
+
+                // [ENG.1.2] Create engine
+                const canvas = document.getElementById('renderCanvas');
+                window.engine = new BabylonEngine(canvas, config);
+
+                updateLoading(30, 'Registering plugins...');
+
+                // [PLG.2] Register Phase 1-2 plugins
+                window.engine.registerPlugin('ground', new GroundPlugin());
+                window.engine.registerPlugin('lighting', new LightingPlugin());
+                window.engine.registerPlugin('shadow', new ShadowPlugin());
+                window.engine.registerPlugin('material', new MaterialPlugin());
+                window.engine.registerPlugin('sky', new SkyPlugin());
+
+                updateLoading(40, 'Registering Phase 3 plugins...');
+
+                // [PLG.3] Register Phase 3 plugins
+                window.assetPlugin = new AssetPlugin();
+                window.interactionPlugin = new InteractionPlugin();
+                window.uiPlugin = new UIPlugin();
+                window.performancePlugin = new PerformancePlugin();
+
+                window.engine.registerPlugin('asset', window.assetPlugin);
+                window.engine.registerPlugin('interaction', window.interactionPlugin);
+                window.engine.registerPlugin('ui', window.uiPlugin);
+                window.engine.registerPlugin('performance', window.performancePlugin);
+
+                // [PLG.4] Register Phase 4 plugins (Transform Gizmos & Properties)
+                window.gizmoPlugin = new GizmoPlugin();
+                window.engine.registerPlugin('gizmo', window.gizmoPlugin);
+
+                window.propertiesPlugin = new PropertiesPlugin();
+                window.engine.registerPlugin('properties', window.propertiesPlugin);
+
+                updateLoading(50, 'Starting engine...');
+
+                // [ENG.1.3] Start engine
+                await window.engine.start();
+
+                window.scene = window.engine.scene;
+
+                // Store plugin references in scene metadata for cross-plugin access
+                if (!window.scene.metadata) window.scene.metadata = {};
+                window.scene.metadata.interactionPlugin = window.interactionPlugin;
+
+                updateLoading(60, 'Setting up scene...');
+
+                // [DEMO.1] Setup scene
+                await setupScene();
+
+                updateLoading(80, 'Setting up UI...');
+
+                // [DEMO.2] Setup UI
+                setupUI();
+
+                updateLoading(90, 'Setting up event listeners...');
+
+                // [DEMO.3] Setup events
+                setupEventListeners();
+
+                updateLoading(100, 'Ready!');
+
+                // Hide loading screen
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                }, 500);
+
+                console.log('[DEMO] Phase 3 Full Demo ready!');
+
+            } catch (error) {
+                console.error('[DEMO] Initialization failed:', error);
+                updateLoading(0, 'Error: ' + error.message);
+            }
+        }
+
+        // [DEMO] Update loading screen
+        function updateLoading(percent, text) {
+            document.getElementById('loadingBar').style.width = percent + '%';
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        // [HYBRID] Setup InputManager action listeners
+        // Babylon.js handles camera rotation via attachControl()
+        // InputManager handles click-based game actions
+        function setupInputActions(camera, inputManager, scene) {
+            // NOTE: Camera movement and rotation are now handled by Babylon's built-in controls
+            // - Mouse drag = camera rotation (handled by camera.attachControl)
+            // - WASD keys = camera movement (handled by camera.keysUp/Down/Left/Right)
+            // - InputManager only handles custom game actions (clicks, selections, etc.)
+
+            // [INP.1] Click-to-move action (walkTo)
+            let walkTarget = null;
+            let walkSpeed = 0.15;
+
+            inputManager.on('action:walkTo', (action) => {
+                // action.hitInfo contains raycast results from MouseSource
+                if (action.hitInfo && action.hitInfo.hit) {
+                    walkTarget = action.hitInfo.pickedPoint.clone();
+                    walkTarget.y = camera.position.y; // Keep same height
+                    console.log('[INP.1] Walking to:', walkTarget);
+                }
+            });
+
+            // [INP.1] Update walk-to-target every frame
+            scene.onBeforeRenderObservable.add(() => {
+                if (walkTarget) {
+                    const direction = walkTarget.subtract(camera.position);
+                    const distance = direction.length();
+
+                    if (distance < 0.5) {
+                        // Arrived
+                        walkTarget = null;
+                    } else {
+                        // Move towards target
+                        direction.normalize();
+                        camera.position.addInPlace(direction.scale(walkSpeed));
+                    }
+                }
+            });
+
+            // [INP.1] Zoom action
+            inputManager.on('action:zoom', (action) => {
+                // action.value contains wheel delta
+                if (action.value !== undefined) {
+                    const zoomAmount = action.value * 0.5;
+                    camera.position.addInPlace(camera.getDirection(BABYLON.Vector3.Forward()).scale(zoomAmount));
+                }
+            });
+
+            console.log('[HYBRID] Input actions configured - Babylon handles camera, InputManager handles clicks');
+        }
+
+        // [DEMO.1] Setup scene
+        async function setupScene() {
+            const scene = window.scene;
+
+            // Get plugins
+            const groundPlugin = window.engine.getPlugin('ground');
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            const shadowPlugin = window.engine.getPlugin('shadow');
+            const materialPlugin = window.engine.getPlugin('material');
+
+            console.log('[DEMO.1] Setting up scene...');
+
+            // [GRD] Create ground
+            groundPlugin.createGround('plane', { width: 50, height: 50 });
+            const ground = groundPlugin.getGround();
+            ground.checkCollisions = true;
+            groundPlugin.setColor('#3a5a3a');
+
+            // [LGT] Lighting
+            lightingPlugin.usePreset('day');
+
+            // [ENV] Add environment for PBR materials (needed for metallic materials)
+            const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
+                "https://playground.babylonjs.com/textures/environment.dds",
+                scene
+            );
+            scene.environmentTexture = hdrTexture;
+            scene.environmentIntensity = 0.8;
+
+            // [SHD] Shadows
+            const sunLight = lightingPlugin.getLight('daySun');
+            if (sunLight) {
+                shadowPlugin.createShadowGenerator('daySun', { light: sunLight });
+                shadowPlugin.setQuality('high');
+            }
+            shadowPlugin.enableReceiveShadows(ground);
+
+            // [CAM] Create camera
+            const camera = new BABYLON.UniversalCamera(
+                'camera',
+                new BABYLON.Vector3(0, 5, -15),
+                scene
+            );
+            camera.setTarget(new BABYLON.Vector3(0, 1, 0));
+            camera.speed = 0.3;
+            camera.checkCollisions = true;
+            camera.applyGravity = true;
+            camera.ellipsoid = new BABYLON.Vector3(1, 1.5, 1);
+
+            // [HYBRID APPROACH] Use Babylon's built-in camera controls
+            // This is the proven approach from scene.js that works reliably
+            const canvas = document.getElementById('renderCanvas');
+            camera.attachControl(canvas, true);
+
+            // Configure camera rotation sensitivity (higher = less sensitive)
+            camera.angularSensibility = 3000;
+
+            // Configure WASD keyboard controls
+            camera.keysUp.push(87);    // W
+            camera.keysDown.push(83);  // S
+            camera.keysLeft.push(65);  // A
+            camera.keysRight.push(68); // D
+
+            // [INP] Get InputManager for click-based game actions
+            // InputManager no longer handles camera controls - Babylon does that now
+            const inputManager = window.engine.getInputManager();
+
+            // Store InputManager and camera references globally
+            window.inputManager = inputManager;
+            window.camera = camera;
+
+            console.log('[HYBRID] Babylon handles camera controls, InputManager handles clicks');
+
+            // [INP] Setup action listeners for click-based actions only
+            setupInputActions(camera, inputManager, scene);
+
+            // [DEMO] Create demo objects
+            await createDemoObjects();
+
+            console.log('[DEMO.1] Scene setup complete');
+        }
+
+        // [DEMO] Create demo objects using AssetPlugin
+        async function createDemoObjects() {
+            const materialPlugin = window.engine.getPlugin('material');
+            const shadowPlugin = window.engine.getPlugin('shadow');
+
+            console.log('[DEMO] Creating demo objects...');
+
+            // Create 6 objects (2 rows of 3)
+            const positions = [
+                { x: -6, z: 3 },   { x: 0, z: 3 },   { x: 6, z: 3 },
+                { x: -6, z: -3 },  { x: 0, z: -3 },  { x: 6, z: -3 }
+            ];
+
+            const shapes = ['box', 'sphere', 'cylinder', 'torus', 'cone', 'capsule'];
+            const materials = ['gold', 'silver', 'copper', 'ruby', 'emerald', 'sapphire'];
+
+            for (let i = 0; i < 6; i++) {
+                let mesh;
+
+                // Create shape
+                switch (shapes[i]) {
+                    case 'box':
+                        mesh = BABYLON.MeshBuilder.CreateBox(`obj${i}`, { size: 2 }, window.scene);
+                        break;
+                    case 'sphere':
+                        mesh = BABYLON.MeshBuilder.CreateSphere(`obj${i}`, { diameter: 2 }, window.scene);
+                        break;
+                    case 'cylinder':
+                        mesh = BABYLON.MeshBuilder.CreateCylinder(`obj${i}`, { height: 2, diameter: 1.5 }, window.scene);
+                        break;
+                    case 'torus':
+                        mesh = BABYLON.MeshBuilder.CreateTorus(`obj${i}`, { diameter: 2, thickness: 0.5 }, window.scene);
+                        break;
+                    case 'cone':
+                        mesh = BABYLON.MeshBuilder.CreateCylinder(`obj${i}`, { height: 2, diameterTop: 0, diameterBottom: 1.5 }, window.scene);
+                        break;
+                    case 'capsule':
+                        mesh = BABYLON.MeshBuilder.CreateCapsule(`obj${i}`, { radius: 0.5, height: 2 }, window.scene);
+                        break;
+                }
+
+                mesh.position.x = positions[i].x;
+                mesh.position.y = 1.5;
+                mesh.position.z = positions[i].z;
+
+                // Apply material
+                const mat = materialPlugin.usePreset(materials[i]);
+                materialPlugin.applyMaterial(mesh, mat);
+
+                // Enable shadows
+                shadowPlugin.enableCastShadows(mesh);
+
+                // Make interactive
+                makeObjectInteractive(mesh, shapes[i]);
+
+                // Register as asset
+                window.assetPlugin.assets.set(`obj${i}`, {
+                    type: 'model',
+                    url: `primitive:${shapes[i]}`,
+                    meshes: [mesh],
+                    loadedAt: Date.now()
+                });
+
+                window.demoObjects.push(mesh);
+            }
+
+            console.log(`[DEMO] Created ${window.demoObjects.length} demo objects`);
+        }
+
+        // [DEMO] Make object interactive
+        function makeObjectInteractive(mesh, shape) {
+            // [INT.1] Hoverable
+            window.interactionPlugin.makeHoverable(mesh, {
+                onHoverEnter: () => {
+                    mesh.scaling.scaleInPlace(1.1);
+                    window.uiPlugin.showTooltip(mesh);
+                },
+                onHoverExit: () => {
+                    mesh.scaling = new BABYLON.Vector3(1, 1, 1);
+                    window.uiPlugin.hideTooltip(mesh);
+                }
+            });
+
+            // [INT.2] Clickable
+            window.interactionPlugin.onClick(mesh, () => {
+                console.log(`[DEMO] Clicked: ${mesh.name} (${shape})`);
+            });
+
+            // [INT.2] Double-click
+            window.interactionPlugin.onDoubleClick(mesh, () => {
+                console.log(`[DEMO] Double-clicked: ${mesh.name}`);
+                // Spin animation
+                BABYLON.Animation.CreateAndStartAnimation(
+                    'spin',
+                    mesh,
+                    'rotation.y',
+                    30,
+                    30,
+                    mesh.rotation.y,
+                    mesh.rotation.y + Math.PI * 2,
+                    BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+                );
+            });
+
+            // [INT.2] Right-click
+            window.interactionPlugin.onRightClick(mesh, (m, event) => {
+                console.log(`[DEMO] Right-clicked: ${mesh.name}`);
+                console.log('Context menu at:', event.clientX, event.clientY);
+            });
+
+            // [INT.3] Draggable
+            window.interactionPlugin.makeDraggable(mesh, {
+                dragPlane: 'ground',
+                onDragStart: () => {
+                    console.log(`[DEMO] Dragging: ${mesh.name}`);
+                },
+                onDragEnd: (position) => {
+                    console.log(`[DEMO] Dropped at:`, position);
+                }
+            });
+
+            // [INT.4] Selectable
+            window.interactionPlugin.makeSelectable(mesh);
+
+            // [UI.6] Add tooltip
+            window.uiPlugin.addTooltip(mesh, {
+                text: `${shape.toUpperCase()}\nClick to select\nDouble-click to spin\nDrag to move`,
+                offset: { x: 0, y: 80 }
+            });
+        }
+
+        // [DEMO.2] Setup UI
+        function setupUI() {
+            console.log('[DEMO.2] Setting up UI...');
+
+            // [UI.1] Create HUD
+            const hud = window.uiPlugin.createHUD();
+
+            hud.addText('title', {
+                text: '🎮 Phase 3: Full Integration Demo',
+                position: { x: 10, y: 10 },
+                fontSize: 20,
+                color: '#4CAF50'
+            });
+
+            hud.addText('fps', {
+                text: 'FPS: 60',
+                position: { x: 10, y: 40 },
+                fontSize: 14,
+                color: 'white'
+            });
+
+            hud.addText('objects', {
+                text: 'Objects: 6',
+                position: { x: 10, y: 60 },
+                fontSize: 14,
+                color: 'white'
+            });
+
+            hud.addText('selected', {
+                text: 'Selected: 0',
+                position: { x: 10, y: 80 },
+                fontSize: 14,
+                color: 'white'
+            });
+
+            hud.addText('quality', {
+                text: 'Quality: High',
+                position: { x: 10, y: 100 },
+                fontSize: 14,
+                color: 'white'
+            });
+
+            // [UI.2] Create info panel (hidden by default)
+            const infoPanel = window.uiPlugin.createPanel('info', {
+                position: { x: '-10px', y: '10px' },
+                width: '280px',
+                height: '400px',
+                horizontalAlignment: BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT,
+                verticalAlignment: BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP,
+                visible: false
+            });
+
+            infoPanel.addText('📊 Performance Metrics', { fontSize: 16, color: '#4CAF50' });
+            infoPanel.addText('─────────────────', { fontSize: 12, color: '#666' });
+
+            // [UI.3] Create toggle button
+            window.uiPlugin.createButton('toggleInfo', {
+                text: '📊 Stats',
+                position: { x: '-10px', y: '10px' },
+                width: '80px',
+                height: '40px',
+                fontSize: 14,
+                horizontalAlignment: BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT,
+                verticalAlignment: BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP,
+                onClick: () => {
+                    infoPanel.toggle();
+                }
+            });
+
+            // [UI.3] Enable auto-optimization button
+            window.uiPlugin.createButton('autoOptimize', {
+                text: '⚡ Auto-Optimize',
+                position: { x: '-10px', y: '60px' },
+                width: '130px',
+                height: '40px',
+                fontSize: 12,
+                horizontalAlignment: BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT,
+                verticalAlignment: BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP,
+                onClick: () => {
+                    window.performancePlugin.enableAutoOptimization({
+                        targetFPS: 30
+                    });
+                    console.log('[DEMO] Auto-optimization enabled (target: 30 FPS)');
+                }
+            });
+
+            // [DEMO] Update HUD every frame
+            window.scene.onBeforeRenderObservable.add(() => {
+                const metrics = window.performancePlugin.getMetrics();
+                const avgFPS = window.performancePlugin.getAverageFPS();
+                const selected = window.interactionPlugin.getSelected();
+                const quality = window.performancePlugin.getQualityTier();
+
+                hud.updateText('fps', `FPS: ${metrics.fps} (avg: ${Math.round(avgFPS)})`);
+                hud.updateText('objects', `Objects: ${window.demoObjects.length} | Draw Calls: ${metrics.drawCalls}`);
+                hud.updateText('selected', `Selected: ${selected.length}`);
+                hud.updateText('quality', `Quality: ${quality.toUpperCase()}`);
+
+                // Update info panel if visible
+                if (infoPanel.getRawPanel().isVisible) {
+                    updateInfoPanel(infoPanel, metrics);
+                }
+            });
+
+            console.log('[DEMO.2] UI setup complete');
+        }
+
+        // [DEMO] Update info panel
+        let lastInfoUpdate = 0;
+        function updateInfoPanel(panel, metrics) {
+            const now = performance.now();
+            if (now - lastInfoUpdate < 1000) return; // Update once per second
+            lastInfoUpdate = now;
+
+            panel.clear();
+            panel.addText('📊 Performance Metrics', { fontSize: 16, color: '#4CAF50' });
+            panel.addText('─────────────────', { fontSize: 12, color: '#666' });
+            panel.addText(`FPS: ${metrics.fps}`, { fontSize: 12 });
+            panel.addText(`Frame Time: ${metrics.frameTime.toFixed(2)} ms`, { fontSize: 12 });
+            panel.addText(`Draw Calls: ${metrics.drawCalls}`, { fontSize: 12 });
+            panel.addText(`Vertices: ${metrics.totalVertices.toLocaleString()}`, { fontSize: 12 });
+            panel.addText(`Faces: ${Math.round(metrics.totalFaces).toLocaleString()}`, { fontSize: 12 });
+            panel.addText(`Textures: ${metrics.textureCount}`, { fontSize: 12 });
+            panel.addText(`Meshes: ${metrics.meshCount}`, { fontSize: 12 });
+            panel.addText('─────────────────', { fontSize: 12, color: '#666' });
+
+            const recommendations = window.performancePlugin.getRecommendations();
+            if (recommendations.length > 0) {
+                panel.addText('⚠️ Recommendations:', { fontSize: 12, color: '#FFA726' });
+                recommendations.forEach(rec => {
+                    panel.addText(`• ${rec.message}`, { fontSize: 10, color: '#999' });
+                });
+            } else {
+                panel.addText('✅ Performance OK', { fontSize: 12, color: '#4CAF50' });
+            }
+        }
+
+        // [DEMO.3] Setup event listeners
+        function setupEventListeners() {
+            const events = window.engine.events;
+
+            // Asset events
+            events.on('asset:loaded', (data) => {
+                console.log('[DEMO] Asset loaded:', data.name);
+            });
+
+            // Interaction events
+            events.on('interaction:selected', (data) => {
+                console.log('[DEMO] Selected:', data.name);
+                // Properties Panel is automatically shown by PropertiesPlugin
+            });
+
+            events.on('interaction:deselected', (data) => {
+                console.log('[DEMO] Deselected:', data.name);
+                // Properties Panel is automatically hidden by PropertiesPlugin
+            });
+
+            events.on('interaction:drag:start', (data) => {
+                console.log('[DEMO] Drag started:', data.name);
+            });
+
+            events.on('interaction:drag:end', (data) => {
+                console.log('[DEMO] Drag ended:', data.name, 'at', data.endPosition);
+            });
+
+            // Gizmo events (for Properties Panel sync)
+            events.on('gizmo:drag:end', () => {
+                // Properties Panel is automatically synced by PropertiesPlugin
+            });
+
+            // Performance events
+            events.on('performance:quality:changed', (data) => {
+                console.log('[DEMO] Quality changed:', data.oldTier, '→', data.newTier);
+            });
+
+            events.on('performance:fps:low', (data) => {
+                console.warn('[DEMO] FPS low:', data.fps, 'FPS (target:', data.target, ')');
+            });
+
+            events.on('performance:fps:critical', (data) => {
+                console.error('[DEMO] FPS CRITICAL:', data.fps, 'FPS');
+            });
+
+            // UI events
+            events.on('ui:button:clicked', (data) => {
+                console.log('[DEMO] Button clicked:', data.name);
+            });
+
+            console.log('[DEMO.3] Event listeners setup complete');
+        }
+    </script>
+</body>
+</html>

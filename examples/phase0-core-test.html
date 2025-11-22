@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phase 0 - Core Architecture Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Babylon.js Core -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      font-family: 'Arial', sans-serif;
+      background: #1a1a2e;
+    }
+
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    #statusPanel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      z-index: 20;
+      min-width: 300px;
+    }
+
+    #statusPanel h3 {
+      margin: 0 0 10px 0;
+      color: #4CAF50;
+    }
+
+    #statusPanel .status-item {
+      margin: 5px 0;
+      padding: 5px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+    }
+
+    #statusPanel .status-label {
+      color: #81C784;
+      font-weight: bold;
+    }
+
+    #statusPanel .status-value {
+      color: #fff;
+    }
+
+    .success {
+      color: #4CAF50;
+    }
+
+    .error {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+
+  <div id="statusPanel">
+    <h3>🚀 Phase 0: Core Architecture Test</h3>
+    <div class="status-item">
+      <span class="status-label">Engine Status:</span>
+      <span class="status-value" id="engineStatus">Initializing...</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Plugins Registered:</span>
+      <span class="status-value" id="pluginCount">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Events Emitted:</span>
+      <span class="status-value" id="eventCount">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">FPS:</span>
+      <span class="status-value" id="fps">--</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Render Loop:</span>
+      <span class="status-value" id="renderStatus">Not Started</span>
+    </div>
+  </div>
+
+  <!-- Core modules (using ES6 modules) -->
+  <script type="module">
+    // Import core classes
+    import BabylonEngine from '../src/core/BabylonEngine.js';
+    import Plugin from '../src/core/Plugin.js';
+    import ConfigLoader from '../src/config/ConfigLoader.js';
+
+    // [TEST] Simple test plugin to verify plugin system works
+    class TestPlugin extends Plugin {
+      constructor() {
+        super({ name: 'TestPlugin' });
+
+        // [PLG.2] Define event subscriptions
+        this.subscriptions = {
+          'engine:started': this.onEngineStarted,
+          'render:frame': this.onRenderFrame
+        };
+
+        this.frameCount = 0;
+      }
+
+      // [PLG.1.3] Plugin start hook
+      start() {
+        super.start();
+        console.log('[TestPlugin] Plugin started!');
+
+        // [TEST] Create a simple test sphere
+        const sphere = BABYLON.MeshBuilder.CreateSphere('testSphere', { diameter: 2 }, this.scene);
+        sphere.position.y = 5;
+
+        // [TEST] Create a ground
+        const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 20, height: 20 }, this.scene);
+
+        // [TEST] Add a light
+        const light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), this.scene);
+
+        // [TEST] Add a camera
+        const camera = new BABYLON.ArcRotateCamera(
+          'camera',
+          Math.PI / 2,
+          Math.PI / 3,
+          10,
+          BABYLON.Vector3.Zero(),
+          this.scene
+        );
+        camera.attachControl(this.scene.getEngine().getRenderingCanvas(), true);
+
+        // [EVT.2] Emit custom event
+        this.events.emit('testplugin:initialized', { message: 'Test plugin ready!' });
+      }
+
+      // [EVT.2] Handle engine started event
+      onEngineStarted(data) {
+        console.log('[TestPlugin] Received engine:started event', data);
+      }
+
+      // [EVT.2] Handle render frame event (runs every frame)
+      onRenderFrame(data) {
+        this.frameCount++;
+
+        // Update UI every 60 frames (~1 second at 60 FPS)
+        if (this.frameCount % 60 === 0) {
+          document.getElementById('fps').textContent = data.fps.toFixed(0);
+        }
+      }
+    }
+
+    // [ENG.1] Initialize engine
+    console.log('=== Phase 0: Core Architecture Test ===');
+
+    // [CFG.1] Load configuration
+    const config = ConfigLoader.load({
+      engineOptions: {
+        antialias: true
+      }
+    });
+
+    // [ENG.1.1] Get canvas
+    const canvas = document.getElementById('renderCanvas');
+
+    // [ENG.1] Create engine
+    const engine = new BabylonEngine(canvas, config);
+
+    // Track events for status panel
+    let eventCount = 0;
+    const events = engine.getEvents();
+
+    // Listen to all events for demo
+    events.on('engine:initialized', () => {
+      eventCount++;
+      document.getElementById('engineStatus').innerHTML = '<span class="success">✓ Initialized</span>';
+      document.getElementById('eventCount').textContent = eventCount;
+    });
+
+    events.on('plugin:registered', (data) => {
+      eventCount++;
+      const count = Array.from(engine.plugins.keys()).length;
+      document.getElementById('pluginCount').textContent = count;
+      document.getElementById('eventCount').textContent = eventCount;
+      console.log('[Engine] Plugin registered:', data.name);
+    });
+
+    events.on('plugin:started', (data) => {
+      eventCount++;
+      document.getElementById('eventCount').textContent = eventCount;
+      console.log('[Engine] Plugin started:', data.name);
+    });
+
+    events.on('engine:started', () => {
+      eventCount++;
+      document.getElementById('engineStatus').innerHTML = '<span class="success">✓ Running</span>';
+      document.getElementById('renderStatus').innerHTML = '<span class="success">✓ Active</span>';
+      document.getElementById('eventCount').textContent = eventCount;
+    });
+
+    events.on('testplugin:initialized', (data) => {
+      eventCount++;
+      console.log('[Engine] Custom event received:', data.message);
+      document.getElementById('eventCount').textContent = eventCount;
+    });
+
+    // [ENG.2] Register test plugin
+    engine.registerPlugin('test', new TestPlugin());
+
+    // [ENG.3] Start engine
+    engine.start();
+
+    // Expose engine globally for debugging
+    window.engine = engine;
+
+    console.log('=== Core Architecture Test Complete ===');
+    console.log('Engine:', engine);
+    console.log('Plugins:', Array.from(engine.plugins.keys()));
+    console.log('Events:', events.eventNames());
+  </script>
+</body>
+</html>

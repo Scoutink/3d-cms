@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3: Asset Loading Demo - 3D CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100vh;
+            display: block;
+            outline: none;
+        }
+
+        /* [UI.1] Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .control-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 20px;
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .control-panel h3 {
+            margin: 15px 0 10px 0;
+            font-size: 16px;
+            color: #81C784;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 20px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #81C784);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Info panel */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 200px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .info-item {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .info-label {
+            color: #81C784;
+            font-weight: bold;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .instructions h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        /* Asset list */
+        .asset-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .asset-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .asset-item-name {
+            color: #81C784;
+            flex: 1;
+        }
+
+        .asset-item-type {
+            color: #999;
+            font-size: 10px;
+            margin-right: 10px;
+        }
+
+        .asset-item-delete {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .asset-item-delete:hover {
+            background: #d32f2f;
+        }
+    </style>
+    <!-- Babylon.js -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <!-- Canvas -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <h3>📦 Asset Loading Demo</h3>
+        <ul>
+            <li><strong>Load Models:</strong> Click buttons to load 3D models</li>
+            <li><strong>Load Textures:</strong> Apply textures dynamically</li>
+            <li><strong>Preload:</strong> Batch load multiple assets</li>
+            <li><strong>Dispose:</strong> Remove assets to free memory</li>
+        </ul>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel">
+        <div class="info-item">
+            <span class="info-label">FPS:</span>
+            <span id="fps">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Assets Loaded:</span>
+            <span id="assetCount">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Loading:</span>
+            <span id="loadingCount">0</span>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <h2>🎮 Asset Controls</h2>
+
+        <h3>📦 Load Models</h3>
+        <button onclick="loadSampleBox()">📦 Load Box</button>
+        <button onclick="loadSampleSphere()">🔮 Load Sphere</button>
+        <button onclick="loadSampleCylinder()">🛢️ Load Cylinder</button>
+
+        <h3>🖼️ Load Textures</h3>
+        <button onclick="loadWoodTexture()">🪵 Wood Texture</button>
+        <button onclick="loadMetalTexture()">⚙️ Metal Texture</button>
+        <button onclick="loadGrassTexture()">🌿 Grass Texture</button>
+
+        <h3>⚡ Batch Operations</h3>
+        <button onclick="preloadAssets()">⚡ Preload All</button>
+        <div class="progress-container" id="preloadProgress" style="display: none;">
+            <div class="progress-bar" id="preloadBar">0%</div>
+        </div>
+        <button onclick="clearAllAssets()" style="background: linear-gradient(135deg, #f44336, #d32f2f);">
+            🗑️ Clear All Assets
+        </button>
+
+        <h3>📋 Loaded Assets</h3>
+        <div class="asset-list" id="assetList">
+            <div style="color: #666; font-size: 12px; text-align: center; padding: 20px;">
+                No assets loaded
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // [ENG.1] Import core
+        import BabylonEngine from '../src/core/BabylonEngine.js';
+        import ConfigLoader from '../src/config/ConfigLoader.js';
+
+        // [PLG.1] Import plugins
+        import AssetPlugin from '../src/plugins/AssetPlugin.js';
+        import GroundPlugin from '../src/plugins/GroundPlugin.js';
+        import LightingPlugin from '../src/plugins/LightingPlugin.js';
+
+        // [ENG.1.1] Global references
+        window.engine = null;
+        window.scene = null;
+        window.assetPlugin = null;
+        window.loadedMeshes = [];
+
+        // [DEMO] Initialize
+        async function init() {
+            console.log('[DEMO] Initializing Asset Demo');
+
+            // [CFG.1] Load config
+            const config = await ConfigLoader.load('../config/engine-config.json');
+
+            // [ENG.1.2] Create engine
+            const canvas = document.getElementById('renderCanvas');
+            window.engine = new BabylonEngine(canvas, config);
+
+            // [PLG.2] Register plugins
+            window.assetPlugin = new AssetPlugin();
+            window.engine.registerPlugin('asset', window.assetPlugin);
+            window.engine.registerPlugin('ground', new GroundPlugin());
+            window.engine.registerPlugin('lighting', new LightingPlugin());
+
+            // [ENG.1.3] Start engine
+            await window.engine.start();
+
+            window.scene = window.engine.scene;
+
+            // [DEMO.1] Setup scene
+            setupScene();
+
+            // [DEMO.2] Setup event listeners
+            setupEventListeners();
+
+            // [DEMO.3] Start info updates
+            startInfoUpdates();
+
+            console.log('[DEMO] Asset Demo ready!');
+        }
+
+        // [DEMO.1] Setup scene
+        function setupScene() {
+            const scene = window.scene;
+
+            // [GRD] Create ground
+            const groundPlugin = window.engine.getPlugin('ground');
+            groundPlugin.createGround('plane', { width: 50, height: 50 });
+            const ground = groundPlugin.getGround();
+            ground.checkCollisions = true;
+            groundPlugin.setColor('#2a4a2a');
+
+            // [LGT] Lighting
+            const lightingPlugin = window.engine.getPlugin('lighting');
+            lightingPlugin.usePreset('day');
+
+            // [CAM] Create camera
+            const camera = new BABYLON.ArcRotateCamera(
+                'camera',
+                -Math.PI / 2,
+                Math.PI / 3,
+                30,
+                BABYLON.Vector3.Zero(),
+                scene
+            );
+            const canvas = scene.getEngine().getRenderingCanvas();
+            camera.attachControl(canvas, true);
+            camera.lowerRadiusLimit = 10;
+            camera.upperRadiusLimit = 100;
+            camera.wheelPrecision = 50;
+
+            console.log('[DEMO.1] Scene setup complete');
+        }
+
+        // [DEMO.2] Setup event listeners
+        function setupEventListeners() {
+            const events = window.engine.events;
+
+            // Asset loaded
+            events.on('asset:loaded', (data) => {
+                console.log('[DEMO] Asset loaded:', data.name);
+                updateAssetList();
+            });
+
+            // Asset loading progress
+            events.on('asset:progress', (data) => {
+                console.log(`[DEMO] Loading ${data.name}: ${(data.progress * 100).toFixed(0)}%`);
+            });
+
+            // Asset error
+            events.on('asset:error', (data) => {
+                console.error('[DEMO] Asset load error:', data.name, data.error);
+                alert(`Failed to load ${data.name}: ${data.error}`);
+            });
+
+            // Asset disposed
+            events.on('asset:disposed', (data) => {
+                console.log('[DEMO] Asset disposed:', data.name);
+                updateAssetList();
+            });
+
+            // Preload progress
+            events.on('asset:preload:progress', (data) => {
+                const percent = (data.progress * 100).toFixed(0);
+                document.getElementById('preloadBar').style.width = percent + '%';
+                document.getElementById('preloadBar').textContent = percent + '%';
+            });
+
+            // Preload complete
+            events.on('asset:preload:complete', (results) => {
+                console.log('[DEMO] Preload complete:', results);
+                document.getElementById('preloadProgress').style.display = 'none';
+            });
+        }
+
+        // [DEMO.3] Update info display
+        function startInfoUpdates() {
+            setInterval(() => {
+                const fps = Math.round(window.engine.getFps());
+                document.getElementById('fps').textContent = fps;
+
+                const stats = window.assetPlugin.getStats();
+                document.getElementById('assetCount').textContent = stats.total;
+                document.getElementById('loadingCount').textContent = stats.loading;
+            }, 100);
+        }
+
+        // [DEMO.4] Update asset list UI
+        function updateAssetList() {
+            const listDiv = document.getElementById('assetList');
+            const assets = window.assetPlugin.listAssets();
+
+            if (assets.length === 0) {
+                listDiv.innerHTML = '<div style="color: #666; font-size: 12px; text-align: center; padding: 20px;">No assets loaded</div>';
+                return;
+            }
+
+            listDiv.innerHTML = assets.map(name => {
+                const asset = window.assetPlugin.getAsset(name);
+                return `
+                    <div class="asset-item">
+                        <span class="asset-item-name">${name}</span>
+                        <span class="asset-item-type">${asset.type}</span>
+                        <button class="asset-item-delete" onclick="disposeAsset('${name}')">×</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // [DEMO.5] Load sample models (using Babylon.js primitives as demo)
+        window.loadSampleBox = async function() {
+            // Create a box mesh (simulating loaded model)
+            const box = BABYLON.MeshBuilder.CreateBox('box', { size: 2 }, window.scene);
+            box.position.x = Math.random() * 10 - 5;
+            box.position.y = 1;
+            box.position.z = Math.random() * 10 - 5;
+
+            // Add default material
+            const material = new BABYLON.StandardMaterial('boxMat', window.scene);
+            material.diffuseColor = new BABYLON.Color3(0.8, 0.4, 0.2);
+            box.material = material;
+
+            // Register as asset
+            const name = 'box_' + Date.now();
+            window.assetPlugin.assets.set(name, {
+                type: 'model',
+                url: 'primitive:box',
+                meshes: [box],
+                animationGroups: [],
+                skeletons: [],
+                particleSystems: [],
+                loadedAt: Date.now()
+            });
+
+            window.engine.events.emit('asset:loaded', { name, type: 'model' });
+            window.loadedMeshes.push(box);
+        };
+
+        window.loadSampleSphere = async function() {
+            const sphere = BABYLON.MeshBuilder.CreateSphere('sphere', { diameter: 2 }, window.scene);
+            sphere.position.x = Math.random() * 10 - 5;
+            sphere.position.y = 1;
+            sphere.position.z = Math.random() * 10 - 5;
+
+            const material = new BABYLON.StandardMaterial('sphereMat', window.scene);
+            material.diffuseColor = new BABYLON.Color3(0.2, 0.4, 0.8);
+            sphere.material = material;
+
+            const name = 'sphere_' + Date.now();
+            window.assetPlugin.assets.set(name, {
+                type: 'model',
+                url: 'primitive:sphere',
+                meshes: [sphere],
+                animationGroups: [],
+                skeletons: [],
+                particleSystems: [],
+                loadedAt: Date.now()
+            });
+
+            window.engine.events.emit('asset:loaded', { name, type: 'model' });
+            window.loadedMeshes.push(sphere);
+        };
+
+        window.loadSampleCylinder = async function() {
+            const cylinder = BABYLON.MeshBuilder.CreateCylinder('cylinder', { height: 2, diameter: 1.5 }, window.scene);
+            cylinder.position.x = Math.random() * 10 - 5;
+            cylinder.position.y = 1;
+            cylinder.position.z = Math.random() * 10 - 5;
+
+            const material = new BABYLON.StandardMaterial('cylinderMat', window.scene);
+            material.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.2);
+            cylinder.material = material;
+
+            const name = 'cylinder_' + Date.now();
+            window.assetPlugin.assets.set(name, {
+                type: 'model',
+                url: 'primitive:cylinder',
+                meshes: [cylinder],
+                animationGroups: [],
+                skeletons: [],
+                particleSystems: [],
+                loadedAt: Date.now()
+            });
+
+            window.engine.events.emit('asset:loaded', { name, type: 'model' });
+            window.loadedMeshes.push(cylinder);
+        };
+
+        // [DEMO.6] Load textures
+        window.loadWoodTexture = function() {
+            const texture = window.assetPlugin.loadTexture('https://cdn.babylonjs.com/Assets/wood.jpg', {
+                name: 'wood',
+                uScale: 2,
+                vScale: 2
+            });
+
+            // Apply to last loaded mesh
+            if (window.loadedMeshes.length > 0) {
+                const lastMesh = window.loadedMeshes[window.loadedMeshes.length - 1];
+                lastMesh.material.diffuseTexture = texture;
+            }
+        };
+
+        window.loadMetalTexture = function() {
+            const texture = window.assetPlugin.loadTexture('https://cdn.babylonjs.com/Assets/metal.jpg', {
+                name: 'metal',
+                uScale: 2,
+                vScale: 2
+            });
+
+            if (window.loadedMeshes.length > 0) {
+                const lastMesh = window.loadedMeshes[window.loadedMeshes.length - 1];
+                lastMesh.material.diffuseTexture = texture;
+            }
+        };
+
+        window.loadGrassTexture = function() {
+            const texture = window.assetPlugin.loadTexture('https://cdn.babylonjs.com/Assets/grass.jpg', {
+                name: 'grass',
+                uScale: 4,
+                vScale: 4
+            });
+
+            if (window.loadedMeshes.length > 0) {
+                const lastMesh = window.loadedMeshes[window.loadedMeshes.length - 1];
+                lastMesh.material.diffuseTexture = texture;
+            }
+        };
+
+        // [DEMO.7] Preload assets
+        window.preloadAssets = async function() {
+            document.getElementById('preloadProgress').style.display = 'block';
+            document.getElementById('preloadBar').style.width = '0%';
+
+            const assetsToLoad = [
+                { type: 'texture', url: 'https://cdn.babylonjs.com/Assets/rock.png', name: 'rock_tex' },
+                { type: 'texture', url: 'https://cdn.babylonjs.com/Assets/ground.jpg', name: 'ground_tex' },
+                { type: 'texture', url: 'https://cdn.babylonjs.com/Assets/floor.png', name: 'floor_tex' }
+            ];
+
+            await window.assetPlugin.preload(assetsToLoad, {
+                onProgress: (loaded, total) => {
+                    console.log(`Preload: ${loaded}/${total}`);
+                },
+                onComplete: (results) => {
+                    alert(`Preload complete!\nLoaded: ${results.loaded.length}\nFailed: ${results.failed.length}`);
+                }
+            });
+        };
+
+        // [DEMO.8] Dispose asset
+        window.disposeAsset = function(name) {
+            window.assetPlugin.disposeAsset(name);
+
+            // Remove from loaded meshes array
+            const asset = window.assetPlugin.getAsset(name);
+            if (asset && asset.meshes) {
+                window.loadedMeshes = window.loadedMeshes.filter(m => !asset.meshes.includes(m));
+            }
+        };
+
+        // [DEMO.9] Clear all assets
+        window.clearAllAssets = function() {
+            if (confirm('Clear all loaded assets?')) {
+                window.assetPlugin.clearAssets();
+                window.loadedMeshes = [];
+            }
+        };
+
+        // Start demo
+        init().catch(error => {
+            console.error('[DEMO] Initialization failed:', error);
+            alert('Failed to initialize demo. Check console for details.');
+        });
+    </script>
+</body>
+</html>

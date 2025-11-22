@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InputManager Standalone Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .test-result.pass {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+        }
+
+        .test-result.fail {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: #f44336;
+        }
+
+        .test-result.info {
+            background: rgba(33, 150, 243, 0.2);
+            border-color: #2196F3;
+        }
+
+        code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .summary h2 {
+            margin-top: 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 InputManager Standalone Test</h1>
+    <p>Testing InputManager core functionality without dependencies.</p>
+
+    <div id="output"></div>
+
+    <div class="summary" id="summary" style="display: none;">
+        <h2>Test Summary</h2>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalTests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="passedTests" style="color: #4CAF50;">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="failedTests" style="color: #f44336;">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import InputManager from '../../src/input/InputManager.js';
+
+        const output = document.getElementById('output');
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            output.appendChild(div);
+
+            if (type === 'pass') passedTests++;
+            if (type === 'fail') failedTests++;
+            if (type !== 'info') totalTests++;
+        }
+
+        function test(name, fn) {
+            try {
+                fn();
+                log(`✅ <strong>${name}</strong>: PASS`, 'pass');
+            } catch (e) {
+                log(`❌ <strong>${name}</strong>: FAIL - ${e.message}`, 'fail');
+                console.error(`Test failed: ${name}`, e);
+            }
+        }
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error(message || `Expected ${expected}, got ${actual}`);
+            }
+        }
+
+        // =================================================================
+        // Begin Tests
+        // =================================================================
+
+        log('<strong>Starting InputManager Tests...</strong>', 'info');
+
+        // Test 1: Basic Initialization
+        test('Initialization', () => {
+            const manager = new InputManager(null, null);
+            assert(manager instanceof InputManager, 'Should be instance of InputManager');
+            assert(manager.sources instanceof Map, 'Should have sources Map');
+            assert(manager.contexts instanceof Map, 'Should have contexts Map');
+            assert(manager.layers.length === 3, 'Should have 3 default layers');
+        });
+
+        // Test 2: Context Registration
+        test('Context Registration', () => {
+            const manager = new InputManager(null, null);
+
+            // Mock context
+            const mockContext = {
+                name: 'test',
+                activate: () => {},
+                deactivate: () => {}
+            };
+
+            manager.registerContext('test', mockContext);
+
+            assert(manager.contexts.has('test'), 'Context should be registered');
+            assert(manager.contexts.get('test') === mockContext, 'Should retrieve same context');
+            assertEqual(mockContext.inputManager, manager, 'Context should have reference to manager');
+        });
+
+        // Test 3: Context Switching
+        test('Context Switching', () => {
+            const manager = new InputManager(null, null);
+
+            let activatedCount = 0;
+            let deactivatedCount = 0;
+
+            const context1 = {
+                name: 'context1',
+                activate: () => { activatedCount++; },
+                deactivate: () => { deactivatedCount++; }
+            };
+
+            const context2 = {
+                name: 'context2',
+                activate: () => { activatedCount++; },
+                deactivate: () => { deactivatedCount++; }
+            };
+
+            manager.registerContext('context1', context1);
+            manager.registerContext('context2', context2);
+
+            // Switch to context1
+            const result1 = manager.setContext('context1');
+            assert(result1 === true, 'Should return true on success');
+            assertEqual(activatedCount, 1, 'Should activate context1');
+            assertEqual(manager.activeContext, context1, 'Should set active context');
+
+            // Switch to context2
+            const result2 = manager.setContext('context2');
+            assertEqual(activatedCount, 2, 'Should activate context2');
+            assertEqual(deactivatedCount, 1, 'Should deactivate context1');
+            assertEqual(manager.activeContext, context2, 'Should update active context');
+
+            // Switch to non-existent context
+            const result3 = manager.setContext('nonexistent');
+            assert(result3 === false, 'Should return false for invalid context');
+            assertEqual(manager.activeContext, context2, 'Should keep current context');
+        });
+
+        // Test 4: Layer Management
+        test('Layer Management', () => {
+            const manager = new InputManager(null, null);
+
+            // Test setting layer active
+            manager.setLayerActive('ui', true);
+            const uiLayer = manager.getLayer('ui');
+            assert(uiLayer.active === true, 'UI layer should be active');
+
+            // Test setting layer inactive
+            manager.setLayerActive('ui', false);
+            assert(uiLayer.active === false, 'UI layer should be inactive');
+
+            // Test invalid layer
+            manager.setLayerActive('invalid', true);
+            // Should not throw, just log error
+        });
+
+        // Test 5: Action State Management
+        test('Action State - Query Empty', () => {
+            const manager = new InputManager(null, null);
+
+            const pressed = manager.isActionPressed('jump');
+            assert(pressed === false, 'Non-existent action should return false');
+
+            const value = manager.getActionValue('move');
+            assert(value === null, 'Non-existent action value should return null');
+        });
+
+        // Test 6: Action State - Set and Query
+        test('Action State - Set and Query', () => {
+            const manager = new InputManager(null, null);
+
+            // Manually set action state (simulating triggerAction)
+            manager.actionStates.set('jump', {
+                name: 'jump',
+                state: 'pressed',
+                value: 1,
+                timestamp: Date.now()
+            });
+
+            const pressed = manager.isActionPressed('jump');
+            assert(pressed === true, 'Jump action should be pressed');
+
+            const value = manager.getActionValue('jump');
+            assertEqual(value, 1, 'Jump value should be 1');
+        });
+
+        // Test 7: Action State - Clear
+        test('Action State - Clear', () => {
+            const manager = new InputManager(null, null);
+
+            manager.actionStates.set('test', { state: 'pressed' });
+            assert(manager.actionStates.has('test'), 'Should have test action');
+
+            manager.clearActionState('test');
+            assert(!manager.actionStates.has('test'), 'Test action should be cleared');
+        });
+
+        // Test 8: Action State - Clear All
+        test('Action State - Clear All', () => {
+            const manager = new InputManager(null, null);
+
+            manager.actionStates.set('action1', { state: 'pressed' });
+            manager.actionStates.set('action2', { state: 'pressed' });
+            assertEqual(manager.actionStates.size, 2, 'Should have 2 actions');
+
+            manager.clearAllActionStates();
+            assertEqual(manager.actionStates.size, 0, 'All actions should be cleared');
+        });
+
+        // Test 9: Blocking - UI Elements
+        test('Blocking - UI Elements', () => {
+            const manager = new InputManager(null, null);
+
+            // Create an input element and focus it
+            const input = document.createElement('input');
+            document.body.appendChild(input);
+            input.focus();
+
+            const blocked = manager.isBlocked({});
+            assert(blocked === true, 'Should block when input is focused');
+
+            // Cleanup
+            document.body.removeChild(input);
+        });
+
+        // Test 10: Blocking - Layers
+        test('Blocking - Layers', () => {
+            const manager = new InputManager(null, null);
+
+            // By default, no layers should block
+            let blocked = manager.isBlocked({});
+            assert(blocked === false, 'Should not block by default');
+
+            // Activate modal layer (blocking)
+            manager.setLayerActive('modal', true);
+            blocked = manager.isBlocked({});
+            assert(blocked === true, 'Should block when modal layer active');
+
+            // Deactivate modal layer
+            manager.setLayerActive('modal', false);
+            blocked = manager.isBlocked({});
+            assert(blocked === false, 'Should not block when modal deactivated');
+        });
+
+        // Test 11: Filters - Dead Zone
+        test('Filters - Dead Zone', () => {
+            const manager = new InputManager(null, null);
+            manager.filters.deadZone = 0.1;
+            manager.filters.enabled = true;
+
+            // Value below dead zone
+            const action1 = { name: 'test', value: 0.05 };
+            const filtered1 = manager.applyFilters(action1);
+            assertEqual(filtered1, 0, 'Small value should be zeroed');
+
+            // Value above dead zone
+            const action2 = { name: 'test', value: 0.5 };
+            const filtered2 = manager.applyFilters(action2);
+            assertEqual(filtered2, 0.5, 'Large value should pass through');
+        });
+
+        // Test 12: Source Management
+        test('Source Management', () => {
+            const manager = new InputManager(null, null);
+
+            const mockSource = {
+                name: 'test-source',
+                enable: () => {},
+                disable: () => {},
+                dispose: () => {}
+            };
+
+            manager.registerSource('test', mockSource);
+            assert(manager.sources.has('test'), 'Source should be registered');
+
+            const retrieved = manager.getSource('test');
+            assert(retrieved === mockSource, 'Should retrieve same source');
+        });
+
+        // Test 13: Statistics
+        test('Statistics', () => {
+            const manager = new InputManager(null, null);
+
+            const stats1 = manager.getStats();
+            assertEqual(stats1.inputsProcessed, 0, 'Initial inputs should be 0');
+            assertEqual(stats1.actionsTriggered, 0, 'Initial actions should be 0');
+
+            // Manually increment (normally done by handleInput/triggerAction)
+            manager.stats.inputsProcessed = 5;
+            manager.stats.actionsTriggered = 3;
+
+            const stats2 = manager.getStats();
+            assertEqual(stats2.inputsProcessed, 5, 'Should track inputs processed');
+            assertEqual(stats2.actionsTriggered, 3, 'Should track actions triggered');
+
+            manager.resetStats();
+            const stats3 = manager.getStats();
+            assertEqual(stats3.inputsProcessed, 0, 'Stats should reset');
+        });
+
+        // Test 14: Debug Mode
+        test('Debug Mode', () => {
+            const manager = new InputManager(null, null);
+
+            assert(manager.debug === false, 'Debug should be off by default');
+
+            manager.enableDebug();
+            assert(manager.debug === true, 'Debug should be on after enable');
+
+            manager.disableDebug();
+            assert(manager.debug === false, 'Debug should be off after disable');
+        });
+
+        // Test 15: Event Emission - Context Changed
+        test('Event Emission - Context Changed', (done) => {
+            const manager = new InputManager(null, null);
+
+            let eventFired = false;
+            let eventData = null;
+
+            manager.on('context:changed', (data) => {
+                eventFired = true;
+                eventData = data;
+            });
+
+            const mockContext = {
+                name: 'test',
+                activate: () => {},
+                deactivate: () => {}
+            };
+
+            manager.registerContext('test', mockContext);
+            manager.setContext('test');
+
+            // Check event fired
+            assert(eventFired === true, 'Context changed event should fire');
+            assert(eventData.to === 'test', 'Event should have correct context name');
+        });
+
+        // Test 16: Event Emission - Layer Changed
+        test('Event Emission - Layer Changed', () => {
+            const manager = new InputManager(null, null);
+
+            let eventFired = false;
+            let eventData = null;
+
+            manager.on('layer:changed', (data) => {
+                eventFired = true;
+                eventData = data;
+            });
+
+            manager.setLayerActive('ui', true);
+
+            assert(eventFired === true, 'Layer changed event should fire');
+            assertEqual(eventData.layer, 'ui', 'Event should have correct layer name');
+            assertEqual(eventData.active, true, 'Event should have correct active state');
+        });
+
+        // Test 17: Disposal
+        test('Disposal', () => {
+            const manager = new InputManager(null, null);
+
+            let sourceDisposed = false;
+            const mockSource = {
+                dispose: () => { sourceDisposed = true; }
+            };
+
+            manager.registerSource('test', mockSource);
+            manager.registerContext('test', { name: 'test', activate: () => {}, deactivate: () => {} });
+            manager.actionStates.set('test', {});
+
+            manager.dispose();
+
+            assert(sourceDisposed === true, 'Sources should be disposed');
+            assertEqual(manager.sources.size, 0, 'Sources should be cleared');
+            assertEqual(manager.contexts.size, 0, 'Contexts should be cleared');
+            assertEqual(manager.actionStates.size, 0, 'Action states should be cleared');
+            assert(manager.activeContext === null, 'Active context should be null');
+        });
+
+        // Test 18: Filter Configuration
+        test('Filter Configuration', () => {
+            const manager = new InputManager(null, null);
+
+            const defaultFilters = manager.getFilters();
+            assert(defaultFilters.deadZone === 0.1, 'Default dead zone should be 0.1');
+
+            manager.setFilters({ deadZone: 0.2, smoothing: 0.5 });
+
+            const newFilters = manager.getFilters();
+            assertEqual(newFilters.deadZone, 0.2, 'Dead zone should be updated');
+            assertEqual(newFilters.smoothing, 0.5, 'Smoothing should be updated');
+        });
+
+        // =================================================================
+        // Test Complete
+        // =================================================================
+
+        log('<strong>All tests complete!</strong>', 'info');
+
+        // Show summary
+        document.getElementById('summary').style.display = 'block';
+        document.getElementById('totalTests').textContent = totalTests;
+        document.getElementById('passedTests').textContent = passedTests;
+        document.getElementById('failedTests').textContent = failedTests;
+
+        // Final result
+        if (failedTests === 0) {
+            log(`<strong>🎉 SUCCESS!</strong> All ${totalTests} tests passed.`, 'pass');
+            console.log('%c✅ All InputManager tests passed!', 'color: #4CAF50; font-size: 16px; font-weight: bold;');
+        } else {
+            log(`<strong>⚠️ FAILURE!</strong> ${failedTests} of ${totalTests} tests failed.`, 'fail');
+            console.error(`❌ ${failedTests} tests failed. Check output above.`);
+        }
+    </script>
+</body>
+</html>

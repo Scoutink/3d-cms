@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D CMS - Setup Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 { color: #4CAF50; }
+        .test {
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .error { border-left-color: #f44336; }
+        .success { border-left-color: #4CAF50; }
+        .warning { border-left-color: #ff9800; }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .status { font-weight: bold; margin: 10px 0; }
+        .success .status { color: #4CAF50; }
+        .error .status { color: #f44336; }
+        .warning .status { color: #ff9800; }
+    </style>
+</head>
+<body>
+    <h1>🔍 3D CMS Setup Diagnostic</h1>
+
+    <div id="protocolTest" class="test">
+        <h2>1. Protocol Check</h2>
+        <div class="status">Checking...</div>
+        <p id="protocolInfo"></p>
+    </div>
+
+    <div id="moduleTest" class="test">
+        <h2>2. ES6 Module Support</h2>
+        <div class="status">Checking...</div>
+        <p id="moduleInfo"></p>
+    </div>
+
+    <div id="babylonTest" class="test">
+        <h2>3. Babylon.js Loading</h2>
+        <div class="status">Checking...</div>
+        <p id="babylonInfo"></p>
+    </div>
+
+    <div id="fileTest" class="test">
+        <h2>4. File Structure</h2>
+        <div class="status">Checking...</div>
+        <p id="fileInfo"></p>
+    </div>
+
+    <div id="solution" class="test" style="display:none;">
+        <h2>✅ Solution</h2>
+        <div id="solutionContent"></div>
+    </div>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+    <script>
+        // Test 1: Protocol
+        const protocol = window.location.protocol;
+        const protocolTest = document.getElementById('protocolTest');
+        const protocolInfo = document.getElementById('protocolInfo');
+
+        if (protocol === 'file:') {
+            protocolTest.classList.add('error');
+            protocolTest.querySelector('.status').textContent = '❌ FAILED';
+            protocolInfo.innerHTML = `
+                <strong>Current Protocol:</strong> ${protocol}<br>
+                <strong>Problem:</strong> You're opening this file directly (file:// protocol).<br>
+                <strong>Issue:</strong> ES6 modules don't work with file:// due to CORS restrictions.<br>
+                <strong>Required:</strong> http:// or https:// protocol (web server needed).
+            `;
+        } else {
+            protocolTest.classList.add('success');
+            protocolTest.querySelector('.status').textContent = '✅ PASSED';
+            protocolInfo.innerHTML = `
+                <strong>Current Protocol:</strong> ${protocol}<br>
+                <strong>Status:</strong> Using web server - ES6 modules will work!
+            `;
+        }
+
+        // Test 2: ES6 Modules
+        const moduleTest = document.getElementById('moduleTest');
+        const moduleInfo = document.getElementById('moduleInfo');
+
+        if ('noModule' in HTMLScriptElement.prototype) {
+            moduleTest.classList.add('success');
+            moduleTest.querySelector('.status').textContent = '✅ SUPPORTED';
+            moduleInfo.textContent = 'Your browser supports ES6 modules.';
+        } else {
+            moduleTest.classList.add('error');
+            moduleTest.querySelector('.status').textContent = '❌ NOT SUPPORTED';
+            moduleInfo.textContent = 'Your browser does not support ES6 modules. Please use a modern browser.';
+        }
+
+        // Test 3: Babylon.js
+        const babylonTest = document.getElementById('babylonTest');
+        const babylonInfo = document.getElementById('babylonInfo');
+
+        if (typeof BABYLON !== 'undefined') {
+            babylonTest.classList.add('success');
+            babylonTest.querySelector('.status').textContent = '✅ LOADED';
+            babylonInfo.innerHTML = `
+                <strong>Babylon.js Version:</strong> ${BABYLON.Engine.Version}<br>
+                <strong>Status:</strong> Successfully loaded from CDN.
+            `;
+        } else {
+            babylonTest.classList.add('error');
+            babylonTest.querySelector('.status').textContent = '❌ FAILED';
+            babylonInfo.textContent = 'Babylon.js failed to load from CDN. Check your internet connection.';
+        }
+
+        // Test 4: File Structure (if on web server)
+        const fileTest = document.getElementById('fileTest');
+        const fileInfo = document.getElementById('fileInfo');
+
+        if (protocol !== 'file:') {
+            fetch('../config/engine-config.json')
+                .then(response => {
+                    if (response.ok) {
+                        fileTest.classList.add('success');
+                        fileTest.querySelector('.status').textContent = '✅ FOUND';
+                        fileInfo.textContent = 'Configuration file found. File structure is correct.';
+                    } else {
+                        fileTest.classList.add('warning');
+                        fileTest.querySelector('.status').textContent = '⚠️ WARNING';
+                        fileInfo.textContent = 'Configuration file not found at expected path. Check file structure.';
+                    }
+                })
+                .catch(error => {
+                    fileTest.classList.add('error');
+                    fileTest.querySelector('.status').textContent = '❌ ERROR';
+                    fileInfo.textContent = 'Error checking file structure: ' + error.message;
+                });
+        } else {
+            fileTest.classList.add('warning');
+            fileTest.querySelector('.status').textContent = '⚠️ SKIPPED';
+            fileInfo.textContent = 'Cannot test file structure with file:// protocol.';
+        }
+
+        // Show solution
+        setTimeout(() => {
+            const solutionDiv = document.getElementById('solution');
+            const solutionContent = document.getElementById('solutionContent');
+
+            if (protocol === 'file:') {
+                solutionDiv.style.display = 'block';
+                solutionDiv.classList.add('error');
+                solutionContent.innerHTML = `
+                    <h3>You need to start a web server!</h3>
+                    <p><strong>Option 1: Use the startup script</strong></p>
+                    <pre>cd /home/user/3d-cms
+./START_SERVER.sh</pre>
+
+                    <p><strong>Option 2: Manual start</strong></p>
+                    <pre>cd /home/user/3d-cms
+python3 -m http.server 8000</pre>
+
+                    <p><strong>Then open:</strong></p>
+                    <pre>http://localhost:8000/examples/phase2-visual-demo.html</pre>
+
+                    <p><strong>Why?</strong> ES6 modules (import/export) require a web server due to browser security (CORS).
+                    The file:// protocol doesn't allow loading external modules.</p>
+                `;
+            } else {
+                solutionDiv.style.display = 'block';
+                solutionDiv.classList.add('success');
+                solutionContent.innerHTML = `
+                    <h3>✅ Setup looks good!</h3>
+                    <p>You can now open the demos:</p>
+                    <ul>
+                        <li><a href="phase1-foundation-demo.html" style="color: #4CAF50;">Phase 1 Demo</a></li>
+                        <li><a href="phase2-visual-demo.html" style="color: #4CAF50;">Phase 2 Demo</a></li>
+                    </ul>
+                    <p>If you still see errors, press F12 to open the console and check for specific error messages.</p>
+                `;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
