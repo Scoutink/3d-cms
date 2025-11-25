@@ -205,27 +205,33 @@ class GizmoPlugin extends Plugin {
     setupSelectionListeners() {
         // Listen to interaction plugin selection events
         this.selectionListener = this.events.on('interaction:selected', (data) => {
+            console.log('[GIZ.4] 📡 Received "interaction:selected" event:', data.name);
             this.handleSelection(data.mesh);
         });
 
         this.deselectionListener = this.events.on('interaction:deselected', (data) => {
+            console.log('[GIZ.4] 📡 Received "interaction:deselected" event:', data.name);
             this.handleDeselection(data.mesh);
         });
 
-        console.log('[GIZ.4] Selection listeners setup');
+        console.log('[GIZ.4] ✓ Selection listeners registered');
     }
 
     // [GIZ.5] Handle mesh selection
     handleSelection(mesh) {
+        console.log('[GIZ.5] ▶ handleSelection() called for:', mesh.name);
+
         // Don't attach gizmos to ground or skybox
         if (mesh.name === 'ground' || mesh.name === 'skybox' || mesh.name.startsWith('chunk_')) {
+            console.log('[GIZ.5] ⚠ Skipping gizmo attach (ground/skybox/chunk)');
             return;
         }
 
         // Attach gizmo to newly selected mesh
+        console.log('[GIZ.5] Attaching gizmo to mesh...');
         this.attachToMesh(mesh);
 
-        console.log(`[GIZ.5] Gizmo attached to: ${mesh.name}`);
+        console.log(`[GIZ.5] ✅ Gizmo attached to: ${mesh.name}`);
     }
 
     // [GIZ.6] Handle mesh deselection
