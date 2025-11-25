@@ -443,6 +443,28 @@ export class LegozoLoader {
             if (mesh) {
                 const interactionPlugin = this.engine.plugins.get('interaction');
                 const propertiesPlugin = this.engine.plugins.get('properties');
+                const collisionPlugin = this.engine.plugins.get('collision');
+
+                // Enable collision on objects
+                if (collisionPlugin) {
+                    // Enable simple collision for camera
+                    collisionPlugin.enableSimpleCollision(mesh, {
+                        checkCollisions: true,
+                        pickable: true
+                    });
+
+                    // Enable physics body if physics is enabled
+                    if (collisionPlugin.physicsEnabled) {
+                        collisionPlugin.enablePhysicsBody(mesh, {
+                            mass: 1,  // Dynamic object (can move)
+                            restitution: 0.5,  // Medium bounce
+                            friction: 0.5,  // Normal friction
+                            shape: BABYLON.PhysicsShapeType.BOX
+                        });
+                    }
+
+                    console.log(`[Legozo] Enabled collision on: ${mesh.name}`);
+                }
 
                 if (interactionPlugin) {
                     // Make mesh hoverable (highlight on hover)
