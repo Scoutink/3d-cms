@@ -70,6 +70,9 @@ class InteractionPlugin extends Plugin {
         this.pointerDownObserver = null;
         this.pointerUpObserver = null;
 
+        // [FIX #2] Track current mode (edit/view)
+        this.currentMode = 'edit'; // Default to edit mode
+
         console.log('[INT] InteractionPlugin initialized');
     }
 
@@ -94,7 +97,28 @@ class InteractionPlugin extends Plugin {
         // [INT.5] Setup pointer observers
         this.setupPointerObservers();
 
+        // [FIX #2] Listen for mode changes
+        this.events.on('mode:changed', (data) => {
+            this.setMode(data.mode);
+        });
+
         console.log('[INT] InteractionPlugin started');
+    }
+
+    // [FIX #2] Set interaction mode
+    setMode(mode) {
+        this.currentMode = mode;
+        console.log(`[INT] Mode changed to: ${mode}`);
+
+        // If switching to view mode, clear any active drag
+        if (mode === 'view' && this.isDragging) {
+            this.endDrag();
+        }
+
+        // If switching to view mode, deselect all objects
+        if (mode === 'view') {
+            this.deselectAll();
+        }
     }
 
     // [INT.5] Setup pointer event observers
@@ -262,6 +286,15 @@ class InteractionPlugin extends Plugin {
         const pickInfo = pointerInfo.pickInfo;
         const event = pointerInfo.event;
 
+        // [FIX #2] In view mode, only allow deselection, no drag or new selection
+        if (this.currentMode === 'view') {
+            if (!pickInfo || !pickInfo.hit || !pickInfo.pickedMesh) {
+                // Clicked empty space in view mode - deselect all
+                this.deselectAll();
+            }
+            return; // Block all other interactions in view mode
+        }
+
         if (!pickInfo || !pickInfo.hit || !pickInfo.pickedMesh) {
             // Clicked empty space - deselect all if not holding Ctrl
             if (!event.ctrlKey && !event.metaKey) {
@@ -304,6 +337,12 @@ class InteractionPlugin extends Plugin {
             this.dragCandidate = null;
             this.pointerDownPosition = null;
             // Continue to process as regular click/selection
+        }
+
+        // [FIX #2] Block all click interactions in view mode (no selection allowed)
+        if (this.currentMode === 'view') {
+            console.log('[INT.2] View mode - blocking selection');
+            return;
         }
 
         if (!pickInfo || !pickInfo.hit || !pickInfo.pickedMesh) {

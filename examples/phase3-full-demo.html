@@ -379,6 +379,38 @@
             font-size: 11px;
         }
 
+        /* [FIX #9] Material Grid in Properties Panel - compact style */
+        .properties-material-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .properties-material-grid button {
+            padding: 6px 4px;
+            font-size: 10px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .properties-material-grid button:hover {
+            background: linear-gradient(135deg, #66BB6A, #5cb85c);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .properties-material-grid button:active {
+            transform: translateY(0);
+        }
+
         /* Scrollbar for control panel */
         .control-panel::-webkit-scrollbar {
             width: 8px;
@@ -650,6 +682,25 @@
                     </div>
                 </div>
             </div>
+
+            <!-- [FIX #9] Material Gallery - now in Properties Panel -->
+            <div class="property-section">
+                <div class="property-section-title">🎨 Material</div>
+                <div class="properties-material-grid">
+                    <button onclick="applyMaterial('wood')">🪵 Wood</button>
+                    <button onclick="applyMaterial('metal')">⚙️ Metal</button>
+                    <button onclick="applyMaterial('gold')">🥇 Gold</button>
+                    <button onclick="applyMaterial('silver')">⚪ Silver</button>
+                    <button onclick="applyMaterial('copper')">🟠 Copper</button>
+                    <button onclick="applyMaterial('glass')">💎 Glass</button>
+                    <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
+                    <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
+                    <button onclick="applyMaterial('stone')">🪨 Stone</button>
+                    <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
+                    <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
+                    <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -663,8 +714,8 @@
         <div class="loading-text" id="loadingText">Initializing...</div>
     </div>
 
-    <!-- Welcome message -->
-    <div class="welcome-message" id="welcomeMessage">
+    <!-- Welcome message (hidden by default - auto-start enabled) -->
+    <div class="welcome-message hidden" id="welcomeMessage">
         <h2>🎮 Welcome to Phase 3 Demo!</h2>
         <p>This demo showcases all advanced plugins working together:</p>
         <ul>
@@ -821,24 +872,7 @@
         </div>
 
         <!-- [MAT] Materials -->
-        <h3>🎨 Material Gallery</h3>
-        <div class="control-group">
-            <label>Click object then apply material</label>
-            <div class="material-grid">
-                <button onclick="applyMaterial('wood')">🪵 Wood</button>
-                <button onclick="applyMaterial('metal')">⚙️ Metal</button>
-                <button onclick="applyMaterial('gold')">🥇 Gold</button>
-                <button onclick="applyMaterial('silver')">⚪ Silver</button>
-                <button onclick="applyMaterial('copper')">🟠 Copper</button>
-                <button onclick="applyMaterial('glass')">💎 Glass</button>
-                <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
-                <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
-                <button onclick="applyMaterial('stone')">🪨 Stone</button>
-                <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
-                <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
-                <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
-            </div>
-        </div>
+        <!-- [FIX #9] Material Gallery moved to Properties Panel -->
     </div>
 
     <!-- Instructions -->
@@ -921,6 +955,7 @@
             const body = document.body;
             const btn = document.getElementById('modeToggleBtn');
             const inputManager = window.inputManager;
+            const engine = window.engine;
 
             if (currentMode === 'edit') {
                 // Switch to view mode
@@ -933,6 +968,11 @@
                     inputManager.setContext('view');
                 }
 
+                // [FIX #2] Emit mode change event for InteractionPlugin
+                if (engine && engine.events) {
+                    engine.events.emit('mode:changed', { mode: 'view' });
+                }
+
                 console.log('[UI] Switched to View Mode - Clean experience');
             } else {
                 // Switch to edit mode
@@ -943,6 +983,11 @@
                 // Connect to InputManager context switch
                 if (inputManager) {
                     inputManager.setContext('edit');
+                }
+
+                // [FIX #2] Emit mode change event for InteractionPlugin
+                if (engine && engine.events) {
+                    engine.events.emit('mode:changed', { mode: 'edit' });
                 }
 
                 console.log('[UI] Switched to Edit Mode - All controls visible');
@@ -1134,6 +1179,19 @@
                 controls.style.display = 'block';
                 window.infiniteTerrainEnabled = true;
 
+                // [FIX #7] Disable edge behavior controls (not relevant with infinite terrain)
+                document.querySelectorAll('[onclick^="setEdgeBehavior"]').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+
+                // [FIX #8] Ensure camera controls are still attached
+                const camera = window.scene.activeCamera;
+                const canvas = document.getElementById('renderCanvas');
+                if (camera && canvas) {
+                    camera.attachControl(canvas, true);
+                }
+
                 console.log('[UI] Infinite terrain enabled');
             } else {
                 // Disable infinite terrain
@@ -1157,6 +1215,19 @@
                 btn.classList.remove('active');
                 controls.style.display = 'none';
                 window.infiniteTerrainEnabled = false;
+
+                // [FIX #7] Re-enable edge behavior controls
+                document.querySelectorAll('[onclick^="setEdgeBehavior"]').forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                });
+
+                // [FIX #8] Ensure camera controls are still attached
+                const camera = window.scene.activeCamera;
+                const canvas = document.getElementById('renderCanvas');
+                if (camera && canvas) {
+                    camera.attachControl(canvas, true);
+                }
 
                 console.log('[UI] Infinite terrain disabled');
             }
@@ -1811,7 +1882,39 @@
                 console.log('[DEMO] Button clicked:', data.name);
             });
 
+            // [FIX #6] Ground edge behavior visual indication
+            events.on('ground:edge-behavior:changed', (data) => {
+                console.log('[DEMO] Edge behavior changed:', data.behavior);
+
+                // Update button states to show which is active
+                document.querySelectorAll('[onclick^="setEdgeBehavior"]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // Find and mark active button
+                const behavior = data.behavior;
+                document.querySelectorAll('[onclick^="setEdgeBehavior"]').forEach(btn => {
+                    const onclick = btn.getAttribute('onclick');
+                    if (onclick.includes(`'${behavior}'`)) {
+                        btn.classList.add('active');
+                    }
+                });
+            });
+
             console.log('[DEMO.3] Event listeners setup complete');
+        }
+
+        // [FIX #1] Auto-start demo on page load (skip intro screen)
+        // Wait for DOM to be fully loaded, then start automatically
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[DEMO] Auto-starting demo...');
+                init();
+            });
+        } else {
+            // DOM already loaded
+            console.log('[DEMO] Auto-starting demo...');
+            init();
         }
     </script>
 </body>

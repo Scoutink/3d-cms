@@ -92,6 +92,11 @@ class ShadowPlugin extends Plugin {
 
     // [PLG.2.1] Start plugin
     start() {
+        // [FIX #10] Listen for lighting preset changes to adjust shadows
+        this.events.on('lighting:preset:changed', (data) => {
+            this.adjustShadowsForLighting(data.preset);
+        });
+
         // [EVT.2] Emit shadow ready event
         this.events.emit('shadow:ready', {
             enabled: this.enabled,
@@ -100,6 +105,71 @@ class ShadowPlugin extends Plugin {
         });
 
         console.log('[SHD] ShadowPlugin started');
+    }
+
+    // [FIX #10] Adjust shadows based on lighting preset
+    adjustShadowsForLighting(preset) {
+        console.log(`[SHD] Adjusting shadows for lighting preset: ${preset}`);
+
+        switch (preset) {
+            case 'day':
+                // Strong, sharp shadows from sun
+                this.setShadowIntensity(1.0);
+                this.setShadowType('soft');
+                this.setQuality('high');
+                break;
+
+            case 'sunset':
+                // Long, soft, orange-tinted shadows
+                this.setShadowIntensity(0.7);
+                this.setShadowType('soft');
+                this.setQuality('high');
+                break;
+
+            case 'night':
+                // Weak, bluish shadows from moon
+                this.setShadowIntensity(0.3);
+                this.setShadowType('advanced');
+                this.setQuality('medium');
+                break;
+
+            case 'indoor':
+                // Multiple soft shadows from point lights
+                this.setShadowIntensity(0.5);
+                this.setShadowType('soft');
+                this.setQuality('medium');
+                break;
+
+            case 'dramatic':
+                // High contrast shadows
+                this.setShadowIntensity(0.9);
+                this.setShadowType('hard');
+                this.setQuality('high');
+                break;
+
+            case 'studio':
+                // Even, neutral shadows
+                this.setShadowIntensity(0.6);
+                this.setShadowType('soft');
+                this.setQuality('high');
+                break;
+
+            default:
+                console.log(`[SHD] Unknown preset: ${preset}, using defaults`);
+                this.setShadowIntensity(0.7);
+                this.setShadowType('soft');
+                this.setQuality('medium');
+        }
+    }
+
+    // [FIX #10] Set shadow intensity (darkness)
+    setShadowIntensity(intensity) {
+        this.shadowGenerators.forEach((data, lightName) => {
+            // darkness is inverse of intensity in Babylon.js
+            data.generator.darkness = 1.0 - intensity;
+        });
+
+        console.log(`[SHD] Shadow intensity set to: ${intensity}`);
     }
 
     // [SHD.1] Create shadow generator for a light

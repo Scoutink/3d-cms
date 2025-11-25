@@ -124,6 +124,9 @@ class GroundPlugin extends Plugin {
         this.collisionEnabled = true;
         this.physicsEnabled = false;
 
+        // [FIX #3] Track if objects are parented to ground for rotation
+        this.groundParentInitialized = false;
+
         console.log('[GRD] GroundPlugin initialized');
     }
 
@@ -141,6 +144,15 @@ class GroundPlugin extends Plugin {
         this.rotation = groundConfig.rotation || { x: 0, y: 0, z: 0 };
         this.edgeBehavior = groundConfig.edgeBehavior || 'stop';
         this.collisionEnabled = groundConfig.collision !== false;
+
+        // [FIX #6] Load saved edge behavior from localStorage
+        if (typeof localStorage !== 'undefined') {
+            const savedBehavior = localStorage.getItem('3dcms_edgeBehavior');
+            if (savedBehavior) {
+                this.edgeBehavior = savedBehavior;
+                console.log('[GRD] Loaded saved edge behavior:', savedBehavior);
+            }
+        }
 
         // [GRD.4.2] Teleport position
         if (groundConfig.teleportPosition) {
@@ -199,6 +211,16 @@ class GroundPlugin extends Plugin {
 
             // [GRD.2.4] Listen for window resize
             window.addEventListener('resize', this.updateDeviceRelativeSize.bind(this));
+        }
+
+        // [FIX #5] Store initial camera position for teleport functionality
+        if (this.scene.activeCamera) {
+            this.teleportPosition = {
+                x: this.scene.activeCamera.position.x,
+                y: this.scene.activeCamera.position.y,
+                z: this.scene.activeCamera.position.z
+            };
+            console.log('[GRD] Initial camera position stored for teleport:', this.teleportPosition);
         }
 
         // [GRD.4] Start edge detection if needed
@@ -367,6 +389,7 @@ class GroundPlugin extends Plugin {
     }
 
     // [GRD.3] Set ground rotation
+    // [FIX #3] FIXED: Use parent-child hierarchy instead of buggy matrix math
     // USER REQUIREMENT: For 3D website layouts (vertical/tilted grounds)
     setRotation(x, y, z, rotateFullScene = this.rotateFullScene) {
         if (!this.ground) {
@@ -374,18 +397,21 @@ class GroundPlugin extends Plugin {
             return;
         }
 
-        const oldRotation = { ...this.rotation };
+        // [FIX #3] Parent all objects to ground ONCE if rotateFullScene is enabled
+        // This way, when ground rotates, children automatically follow!
+        if (rotateFullScene && !this.groundParentInitialized) {
+            this.parentObjectsToGround();
+            this.groundParentInitialized = true;
+            console.log('[GRD.3] Objects parented to ground for rotation');
+        }
+
+        // Store rotation
         this.rotation = { x, y, z };
 
+        // [FIX #3] Simply rotate the ground - children follow automatically!
         this.ground.rotation.x = x;
         this.ground.rotation.y = y;
         this.ground.rotation.z = z;
-
-        // [GRD.3.1] Rotate full scene if enabled
-        // USER REQUIREMENT: All objects maintain relative position to ground
-        if (rotateFullScene) {
-            this.rotateSceneObjects(oldRotation, this.rotation);
-        }
 
         // [EVT.2] Emit rotation changed event
         this.events.emit('ground:rotation:changed', {
@@ -397,44 +423,31 @@ class GroundPlugin extends Plugin {
         console.log(`[GRD.3] Ground rotation set: (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}) ${rotateFullScene ? '(full scene)' : ''}`);
     }
 
-    // [GRD.3.1] Rotate all scene objects to maintain relative position to ground
-    // USER REQUIREMENT: When ground rotates, objects follow
-    rotateSceneObjects(oldRotation, newRotation) {
-        if (!this.scene) return;
+    // [FIX #3] NEW METHOD: Parent all scene objects to ground for automatic rotation
+    // USER REQUIREMENT: When ground rotates, objects follow naturally via parent-child hierarchy
+    parentObjectsToGround() {
+        if (!this.scene || !this.ground) return;
 
-        // Calculate rotation delta
-        const deltaX = newRotation.x - oldRotation.x;
-        const deltaY = newRotation.y - oldRotation.y;
-        const deltaZ = newRotation.z - oldRotation.z;
-
-        // Get all meshes except ground, camera, and boundary walls
-        const objectsToRotate = this.scene.meshes.filter(mesh => {
+        // Get all meshes that should be parented to ground
+        const objectsToParent = this.scene.meshes.filter(mesh => {
             if (!mesh) return false;
             if (mesh === this.ground) return false;
             if (mesh.name === 'camera') return false;
             if (mesh.name.startsWith('boundaryWall_')) return false;
+            if (mesh.name === 'skybox') return false;
             if (mesh.metadata?.excludeFromGroundRotation) return false;
+            // Don't parent objects that already have a parent (to avoid conflicts)
+            if (mesh.parent) return false;
             return true;
         });
 
-        objectsToRotate.forEach(mesh => {
-            // Store original position relative to ground
-            const relativePos = mesh.position.clone();
-
-            // Create rotation transformation around ground center
-            const rotationMatrix = BABYLON.Matrix.RotationYawPitchRoll(deltaY, deltaX, deltaZ);
-
-            // Apply rotation to position (rotate around origin)
-            const newPos = BABYLON.Vector3.TransformCoordinates(relativePos, rotationMatrix);
-            mesh.position = newPos;
-
-            // Rotate the object itself to maintain orientation relative to ground
-            mesh.rotation.x += deltaX;
-            mesh.rotation.y += deltaY;
-            mesh.rotation.z += deltaZ;
+        // Parent each object to the ground
+        objectsToParent.forEach(mesh => {
+            mesh.parent = this.ground;
         });
 
-        console.log(`[GRD.3.1] Rotated ${objectsToRotate.length} scene objects with ground`);
+        console.log(`[GRD.3] Parented ${objectsToParent.length} objects to ground`);
+        return objectsToParent.length;
     }
 
     // [GRD.3] Use rotation preset
@@ -558,6 +571,16 @@ class GroundPlugin extends Plugin {
             this.stopEdgeDetection();
         }
 
+        // [FIX #6] Save to localStorage for persistence
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('3dcms_edgeBehavior', behavior);
+        }
+
+        // [FIX #6] Emit event for UI update
+        this.events.emit('ground:edge-behavior:changed', {
+            behavior: behavior
+        });
+
         console.log(`[GRD.4] Edge behavior set: ${behavior}`);
     }
 
@@ -587,6 +610,11 @@ class GroundPlugin extends Plugin {
     // [GRD.4] Check if camera is at edge
     // USER REQUIREMENT: Handle camera reaching ground boundaries
     checkCameraEdge() {
+        // [FIX #7] Skip edge detection if infinite terrain is enabled
+        if (typeof window !== 'undefined' && window.infiniteTerrainEnabled) {
+            return; // Don't check edges with infinite terrain
+        }
+
         const camera = this.scene.activeCamera;
         if (!camera || this.sizeMode !== 'fixed') {
             return;
@@ -648,6 +676,7 @@ class GroundPlugin extends Plugin {
         const halfHeight = this.height / 2;
         const buffer = 0.5; // Small buffer to prevent jitter
 
+        // [FIX #4] Stop camera position at edge
         switch (edge) {
             case 'east':
                 camera.position.x = halfWidth - buffer;
@@ -662,6 +691,23 @@ class GroundPlugin extends Plugin {
                 camera.position.z = -halfHeight + buffer;
                 break;
         }
+
+        // [FIX #4] CRITICAL: Stop camera momentum/velocity to prevent jitter
+        // UniversalCamera has inertia, must zero out velocity when hitting edge
+        if (camera._localDirection) {
+            camera._localDirection.x = 0;
+            camera._localDirection.y = 0;
+            camera._localDirection.z = 0;
+        }
+
+        // Also stop any movement vector
+        if (camera.cameraDirection) {
+            camera.cameraDirection.x = 0;
+            camera.cameraDirection.y = 0;
+            camera.cameraDirection.z = 0;
+        }
+
+        console.log(`[GRD.4.1] Camera stopped at ${edge} edge`);
     }
 
     // [GRD.4.2] Teleport camera to start
