@@ -65,6 +65,10 @@ class InteractionPlugin extends Plugin {
         this.selectionColor = new BABYLON.Color3(0, 1, 0); // Green outline
         this.selectionThickness = 0.1;
 
+        // [INT.1] Highlight layers for visual feedback
+        this.hoverHighlightLayer = null;
+        this.hoverColor = new BABYLON.Color3(0.3, 0.7, 1.0); // Blue for hover
+
         // [INT.5] Observers
         this.pointerMoveObserver = null;
         this.pointerDownObserver = null;
@@ -93,6 +97,13 @@ class InteractionPlugin extends Plugin {
     // [PLG.2.1] Start plugin
     start() {
         super.start();
+
+        // [INT.1] Create highlight layer for hover effects
+        this.hoverHighlightLayer = new BABYLON.HighlightLayer('hoverHighlight', this.scene, {
+            isStroke: false,
+            blurHorizontalSize: 1.0,
+            blurVerticalSize: 1.0
+        });
 
         // [INT.5] Setup pointer observers
         this.setupPointerObservers();
@@ -231,13 +242,18 @@ class InteractionPlugin extends Plugin {
             callbacks.onHoverEnter(mesh);
         }
 
+        // [INT.1.1] Apply hover highlight visual
+        if (this.hoverHighlightLayer) {
+            this.hoverHighlightLayer.addMesh(mesh, this.hoverColor);
+        }
+
         // [EVT.2] Emit hover enter event
         this.events.emit('interaction:hover:enter', {
             mesh: mesh,
             name: mesh.name
         });
 
-        console.log(`[INT.1] Hover enter: ${mesh.name}`);
+        console.log(`[INT.1] Hover enter: ${mesh.name} (highlight applied)`);
     }
 
     // [INT.1] Handle hover exit
@@ -251,13 +267,18 @@ class InteractionPlugin extends Plugin {
             callbacks.onHoverExit(mesh);
         }
 
+        // [INT.1.2] Remove hover highlight visual
+        if (this.hoverHighlightLayer) {
+            this.hoverHighlightLayer.removeMesh(mesh);
+        }
+
         // [EVT.2] Emit hover exit event
         this.events.emit('interaction:hover:exit', {
             mesh: mesh,
             name: mesh.name
         });
 
-        console.log(`[INT.1] Hover exit: ${mesh.name}`);
+        console.log(`[INT.1] Hover exit: ${mesh.name} (highlight removed)`);
 
         this.hoveredMesh = null;
     }
@@ -693,6 +714,12 @@ class InteractionPlugin extends Plugin {
         }
         if (this.pointerUpObserver) {
             this.scene.onPointerObservable.remove(this.pointerUpObserver);
+        }
+
+        // Dispose highlight layer
+        if (this.hoverHighlightLayer) {
+            this.hoverHighlightLayer.dispose();
+            this.hoverHighlightLayer = null;
         }
 
         // Clear all interactions
