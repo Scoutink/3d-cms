@@ -18,102 +18,161 @@
         <!-- Position -->
         <div class="property-section">
             <div class="property-section-title">Position</div>
-            <div class="property-row">
-                <div class="property-input-group">
-                    <span class="property-label">X</span>
-                    <button class="prop-decrement" data-input="propPosX" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propPosX"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propPosX" data-step="0.1">+</button>
+            <div class="property-grid">
+                <!-- X Position -->
+                <div class="property-control">
+                    <span class="property-axis-label">X</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propPosX" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propPosX" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propPosX" step="0.1" value="0.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propPosX" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propPosX" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Y</span>
-                    <button class="prop-decrement" data-input="propPosY" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propPosY"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propPosY" data-step="0.1">+</button>
+
+                <!-- Y Position -->
+                <div class="property-control">
+                    <span class="property-axis-label">Y</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propPosY" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propPosY" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propPosY" step="0.1" value="0.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propPosY" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propPosY" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Z</span>
-                    <button class="prop-decrement" data-input="propPosZ" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propPosZ"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propPosZ" data-step="0.1">+</button>
+
+                <!-- Z Position -->
+                <div class="property-control">
+                    <span class="property-axis-label">Z</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propPosZ" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propPosZ" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propPosZ" step="0.1" value="0.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propPosZ" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propPosZ" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Rotation -->
         <div class="property-section">
-            <div class="property-section-title">Rotation</div>
-            <div class="property-row">
-                <div class="property-input-group">
-                    <span class="property-label">X</span>
-                    <button class="prop-decrement" data-input="propRotX" data-step="1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propRotX"
-                           step="1">
-                    <button class="prop-increment" data-input="propRotX" data-step="1">+</button>
+            <div class="property-section-title">Rotation (degrees)</div>
+            <div class="property-grid">
+                <!-- X Rotation -->
+                <div class="property-control">
+                    <span class="property-axis-label">X</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propRotX" data-step="10">▴</button>
+                            <button class="spinner-btn" data-input="propRotX" data-step="1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propRotX" step="1" value="0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propRotX" data-step="-10">▾</button>
+                            <button class="spinner-btn" data-input="propRotX" data-step="-1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Y</span>
-                    <button class="prop-decrement" data-input="propRotY" data-step="1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propRotY"
-                           step="1">
-                    <button class="prop-increment" data-input="propRotY" data-step="1">+</button>
+
+                <!-- Y Rotation -->
+                <div class="property-control">
+                    <span class="property-axis-label">Y</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propRotY" data-step="10">▴</button>
+                            <button class="spinner-btn" data-input="propRotY" data-step="1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propRotY" step="1" value="0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propRotY" data-step="-10">▾</button>
+                            <button class="spinner-btn" data-input="propRotY" data-step="-1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Z</span>
-                    <button class="prop-decrement" data-input="propRotZ" data-step="1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propRotZ"
-                           step="1">
-                    <button class="prop-increment" data-input="propRotZ" data-step="1">+</button>
+
+                <!-- Z Rotation -->
+                <div class="property-control">
+                    <span class="property-axis-label">Z</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propRotZ" data-step="10">▴</button>
+                            <button class="spinner-btn" data-input="propRotZ" data-step="1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propRotZ" step="1" value="0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propRotZ" data-step="-10">▾</button>
+                            <button class="spinner-btn" data-input="propRotZ" data-step="-1">▾</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="property-hint">Values in degrees</div>
         </div>
 
         <!-- Scale -->
         <div class="property-section">
             <div class="property-section-title">Scale</div>
-            <div class="property-row">
-                <div class="property-input-group">
-                    <span class="property-label">X</span>
-                    <button class="prop-decrement" data-input="propScaleX" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propScaleX"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propScaleX" data-step="0.1">+</button>
+            <div class="property-grid">
+                <!-- X Scale -->
+                <div class="property-control">
+                    <span class="property-axis-label">X</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propScaleX" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propScaleX" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propScaleX" step="0.1" value="1.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propScaleX" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propScaleX" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Y</span>
-                    <button class="prop-decrement" data-input="propScaleY" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propScaleY"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propScaleY" data-step="0.1">+</button>
+
+                <!-- Y Scale -->
+                <div class="property-control">
+                    <span class="property-axis-label">Y</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propScaleY" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propScaleY" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propScaleY" step="0.1" value="1.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propScaleY" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propScaleY" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="property-input-group">
-                    <span class="property-label">Z</span>
-                    <button class="prop-decrement" data-input="propScaleZ" data-step="0.1">−</button>
-                    <input type="number"
-                           class="property-input"
-                           id="propScaleZ"
-                           step="0.1">
-                    <button class="prop-increment" data-input="propScaleZ" data-step="0.1">+</button>
+
+                <!-- Z Scale -->
+                <div class="property-control">
+                    <span class="property-axis-label">Z</span>
+                    <div class="property-spinner">
+                        <div class="spinner-buttons-top">
+                            <button class="spinner-btn" data-input="propScaleZ" data-step="1">▴</button>
+                            <button class="spinner-btn" data-input="propScaleZ" data-step="0.1">▴</button>
+                        </div>
+                        <input type="number" class="property-value" id="propScaleZ" step="0.1" value="1.0">
+                        <div class="spinner-buttons-bottom">
+                            <button class="spinner-btn" data-input="propScaleZ" data-step="-1">▾</button>
+                            <button class="spinner-btn" data-input="propScaleZ" data-step="-0.1">▾</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

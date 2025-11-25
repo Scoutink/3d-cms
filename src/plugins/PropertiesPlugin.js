@@ -122,46 +122,32 @@ class PropertiesPlugin extends Plugin {
         console.log('[PROPS.2] Input elements cached');
     }
 
-    // [PROPS.2.1] Setup increment/decrement button handlers
+    // [PROPS.2.1] Setup spinner button handlers
     setupIncrementButtons() {
-        const incrementButtons = this.panelElement.querySelectorAll('.prop-increment');
-        const decrementButtons = this.panelElement.querySelectorAll('.prop-decrement');
+        const spinnerButtons = this.panelElement.querySelectorAll('.spinner-btn');
 
-        // Increment buttons
-        incrementButtons.forEach(button => {
+        spinnerButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const inputId = button.getAttribute('data-input');
-                const step = parseFloat(button.getAttribute('data-step')) || 0.1;
+                const step = parseFloat(button.getAttribute('data-step'));
                 const input = document.getElementById(inputId);
 
-                if (input) {
+                if (input && !isNaN(step)) {
                     const currentValue = parseFloat(input.value) || 0;
-                    input.value = (currentValue + step).toFixed(step < 1 ? 2 : 0);
-                    // Trigger change event
+                    const newValue = currentValue + step;
+
+                    // Format based on step size
+                    const decimalPlaces = Math.abs(step) < 1 ? 2 : 0;
+                    input.value = newValue.toFixed(decimalPlaces);
+
+                    // Trigger change event to update mesh
                     input.dispatchEvent(new Event('change'));
                 }
             });
         });
 
-        // Decrement buttons
-        decrementButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const inputId = button.getAttribute('data-input');
-                const step = parseFloat(button.getAttribute('data-step')) || 0.1;
-                const input = document.getElementById(inputId);
-
-                if (input) {
-                    const currentValue = parseFloat(input.value) || 0;
-                    input.value = (currentValue - step).toFixed(step < 1 ? 2 : 0);
-                    // Trigger change event
-                    input.dispatchEvent(new Event('change'));
-                }
-            });
-        });
-
-        console.log('[PROPS.2.1] Increment/decrement buttons setup complete');
+        console.log('[PROPS.2.1] Spinner buttons setup complete');
     }
 
     // [PROPS.3] Setup event listeners
