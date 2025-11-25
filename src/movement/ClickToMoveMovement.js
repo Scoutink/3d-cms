@@ -112,7 +112,18 @@ class ClickToMoveMovement {
         const pick = pointerInfo.pickInfo;
 
         // [MOV.5.1] Check if click hit something pickable
-        if (pick && pick.hit && pick.pickedPoint) {
+        if (pick && pick.hit && pick.pickedPoint && pick.pickedMesh) {
+            // [MOV.5.1] Only move to ground or walkable surfaces
+            // Check if mesh is ground or marked as walkable
+            const mesh = pick.pickedMesh;
+            const isGround = mesh.name === 'ground' || mesh.name.startsWith('chunk_');
+            const isWalkable = mesh.metadata && mesh.metadata.walkable === true;
+
+            if (!isGround && !isWalkable) {
+                console.log(`[MOV.5.1] Clicked ${mesh.name} - not walkable, ignoring`);
+                return; // Don't move to non-walkable objects
+            }
+
             // [MOV.5.2] Set target position
             this.target = pick.pickedPoint.clone();
 
