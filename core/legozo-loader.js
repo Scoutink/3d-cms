@@ -116,7 +116,8 @@ export class LegozoLoader {
         this.updateLoading(10, 'Loading configuration...');
 
         // Load both engine config and scene config
-        const engineConfig = await ConfigLoader.load('../config/engine-config.json');
+        // Paths are relative to index.html, not this file
+        const engineConfig = await ConfigLoader.load('./config/engine-config.json');
         const sceneConfig = await ConfigLoader.load(configPath);
 
         // Merge configurations

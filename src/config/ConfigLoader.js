@@ -23,16 +23,26 @@ class ConfigLoader {
     // [CFG.1] Load configuration from object or file
     // [CFG.1.2] Merges with defaults
     // [CFG.1.1] Validates against schema (optional)
-    static load(source) {
+    static async load(source) {
         let config = {};
 
         // [CFG.1] Load from object or use defaults
         if (typeof source === 'object' && source !== null) {
             config = source;
         } else if (typeof source === 'string') {
-            // [CFG.1] Load from URL or file path
-            console.warn('[CFG.1] Loading config from file not implemented yet, using defaults');
-            config = {};
+            // [CFG.1] Load from URL or file path using fetch
+            try {
+                const response = await fetch(source);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                config = await response.json();
+                console.log(`[CFG.1] Loaded config from ${source}`);
+            } catch (error) {
+                console.error(`[CFG.1] Error loading config from ${source}:`, error);
+                console.warn('[CFG.1] Using default configuration');
+                config = {};
+            }
         } else {
             console.log('[CFG.1] No config provided, using defaults');
             config = {};
