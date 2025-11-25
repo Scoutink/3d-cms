@@ -124,9 +124,6 @@ class GroundPlugin extends Plugin {
         this.collisionEnabled = true;
         this.physicsEnabled = false;
 
-        // [FIX #3] Track if objects are parented to ground for rotation
-        this.groundParentInitialized = false;
-
         console.log('[GRD] GroundPlugin initialized');
     }
 
@@ -214,13 +211,27 @@ class GroundPlugin extends Plugin {
         }
 
         // [FIX #5] Store initial camera position for teleport functionality
+        // [FIX #3.2] Store in ground-local space so it works with rotated ground
         if (this.scene.activeCamera) {
-            this.teleportPosition = {
-                x: this.scene.activeCamera.position.x,
-                y: this.scene.activeCamera.position.y,
-                z: this.scene.activeCamera.position.z
-            };
-            console.log('[GRD] Initial camera position stored for teleport:', this.teleportPosition);
+            const cameraPos = this.scene.activeCamera.position;
+            if (this.ground) {
+                // Transform to ground-local space
+                const invWorldMatrix = this.ground.getWorldMatrix().invert();
+                const localPos = BABYLON.Vector3.TransformCoordinates(cameraPos, invWorldMatrix);
+                this.teleportPosition = {
+                    x: localPos.x,
+                    y: localPos.y,
+                    z: localPos.z
+                };
+            } else {
+                // Fallback to world position
+                this.teleportPosition = {
+                    x: cameraPos.x,
+                    y: cameraPos.y,
+                    z: cameraPos.z
+                };
+            }
+            console.log('[GRD] Initial camera position stored for teleport (ground-local):', this.teleportPosition);
         }
 
         // [GRD.4] Start edge detection if needed
@@ -397,12 +408,14 @@ class GroundPlugin extends Plugin {
             return;
         }
 
-        // [FIX #3] Parent all objects to ground ONCE if rotateFullScene is enabled
-        // This way, when ground rotates, children automatically follow!
-        if (rotateFullScene && !this.groundParentInitialized) {
-            this.parentObjectsToGround();
-            this.groundParentInitialized = true;
-            console.log('[GRD.3] Objects parented to ground for rotation');
+        // [FIX #3.1] CORRECTED: Always parent objects when rotateFullScene is enabled
+        // This fixes race condition where objects might not exist during initial setup
+        // The parentObjectsToGround() method already filters out already-parented objects
+        if (rotateFullScene) {
+            const count = this.parentObjectsToGround();
+            if (count > 0) {
+                console.log(`[GRD.3] Parented ${count} new objects to ground for rotation`);
+            }
         }
 
         // Store rotation
@@ -433,10 +446,10 @@ class GroundPlugin extends Plugin {
             if (!mesh) return false;
             if (mesh === this.ground) return false;
             if (mesh.name === 'camera') return false;
-            if (mesh.name.startsWith('boundaryWall_')) return false;
             if (mesh.name === 'skybox') return false;
             if (mesh.metadata?.excludeFromGroundRotation) return false;
             // Don't parent objects that already have a parent (to avoid conflicts)
+            // Note: Boundary walls are now explicitly parented when created
             if (mesh.parent) return false;
             return true;
         });
@@ -620,13 +633,25 @@ class GroundPlugin extends Plugin {
             return;
         }
 
-        const pos = camera.position;
+        // [FIX #3.2] Transform camera position to ground-local space
+        // This accounts for ground rotation when checking boundaries
+        let pos;
+        if (this.ground) {
+            // Get inverse world matrix to transform from world to local space
+            const invWorldMatrix = this.ground.getWorldMatrix().invert();
+            // Transform camera world position to ground-local position
+            pos = BABYLON.Vector3.TransformCoordinates(camera.position, invWorldMatrix);
+        } else {
+            // Fallback to world position if ground doesn't exist
+            pos = camera.position;
+        }
+
         const halfWidth = this.width / 2;
         const halfHeight = this.height / 2;
 
         let edgeReached = null;
 
-        // Check boundaries
+        // Check boundaries in ground-local space
         if (pos.x > halfWidth) edgeReached = 'east';
         else if (pos.x < -halfWidth) edgeReached = 'west';
         else if (pos.z > halfHeight) edgeReached = 'north';
@@ -676,20 +701,39 @@ class GroundPlugin extends Plugin {
         const halfHeight = this.height / 2;
         const buffer = 0.5; // Small buffer to prevent jitter
 
-        // [FIX #4] Stop camera position at edge
+        // [FIX #3.2] Calculate clamped position in ground-local space, then transform to world space
+        let localPos;
+        if (this.ground) {
+            // Transform camera world position to ground-local space
+            const invWorldMatrix = this.ground.getWorldMatrix().invert();
+            localPos = BABYLON.Vector3.TransformCoordinates(camera.position, invWorldMatrix);
+        } else {
+            localPos = camera.position.clone();
+        }
+
+        // [FIX #4] Clamp position at edge in ground-local space
         switch (edge) {
             case 'east':
-                camera.position.x = halfWidth - buffer;
+                localPos.x = halfWidth - buffer;
                 break;
             case 'west':
-                camera.position.x = -halfWidth + buffer;
+                localPos.x = -halfWidth + buffer;
                 break;
             case 'north':
-                camera.position.z = halfHeight - buffer;
+                localPos.z = halfHeight - buffer;
                 break;
             case 'south':
-                camera.position.z = -halfHeight + buffer;
+                localPos.z = -halfHeight + buffer;
                 break;
+        }
+
+        // [FIX #3.2] Transform clamped local position back to world space
+        if (this.ground) {
+            const worldMatrix = this.ground.getWorldMatrix();
+            const worldPos = BABYLON.Vector3.TransformCoordinates(localPos, worldMatrix);
+            camera.position.copyFrom(worldPos);
+        } else {
+            camera.position.copyFrom(localPos);
         }
 
         // [FIX #4] CRITICAL: Stop camera momentum/velocity to prevent jitter
@@ -712,9 +756,22 @@ class GroundPlugin extends Plugin {
 
     // [GRD.4.2] Teleport camera to start
     teleportCamera(camera) {
-        camera.position.x = this.teleportPosition.x;
-        camera.position.y = this.teleportPosition.y;
-        camera.position.z = this.teleportPosition.z;
+        // [FIX #3.2] Transform teleport position from ground-local to world space
+        if (this.ground) {
+            const localPos = new BABYLON.Vector3(
+                this.teleportPosition.x,
+                this.teleportPosition.y,
+                this.teleportPosition.z
+            );
+            const worldMatrix = this.ground.getWorldMatrix();
+            const worldPos = BABYLON.Vector3.TransformCoordinates(localPos, worldMatrix);
+            camera.position.copyFrom(worldPos);
+        } else {
+            // Fallback: use as world position
+            camera.position.x = this.teleportPosition.x;
+            camera.position.y = this.teleportPosition.y;
+            camera.position.z = this.teleportPosition.z;
+        }
 
         // [EVT.2] Emit teleport event
         this.events.emit('ground:camera:teleported', {
@@ -793,6 +850,11 @@ class GroundPlugin extends Plugin {
             wall.isVisible = false;
             wall.checkCollisions = true;
             wall.isPickable = false; // CRITICAL: Don't block raycasts for click-to-move
+
+            // [FIX #3.1] Parent walls to ground so they rotate with it
+            if (this.ground) {
+                wall.parent = this.ground;
+            }
 
             this.boundaryWalls.push(wall);
         });
