@@ -111,6 +111,9 @@ class PhysicsModule extends ModuleBase {
         // Initialize UI controller
         this.controller = new PhysicsController(this);
 
+        // CRITICAL: Must call init() to attach event listeners and register actions
+        await this.controller.init();
+
         // Listen for physics events
         this.setupEventListeners();
 

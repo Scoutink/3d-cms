@@ -527,6 +527,70 @@ export class LegozoLoader {
         }
 
         console.log(`[Legozo] Created ${objects.length} demo objects`);
+
+        // DIAGNOSTIC: Verify collision settings on all meshes
+        this.verifyCollisionSettings();
+    }
+
+    /**
+     * DIAGNOSTIC: Verify collision settings on camera, ground, and objects
+     * This helps debug collision issues by logging all relevant settings
+     */
+    verifyCollisionSettings() {
+        console.log('='.repeat(80));
+        console.log('[COLLISION DIAGNOSTIC] Verifying all collision settings...');
+        console.log('='.repeat(80));
+
+        const scene = this.engine.scene;
+        const camera = scene.activeCamera;
+
+        // Check camera collision settings
+        if (camera) {
+            console.log('[CAMERA COLLISION]');
+            console.log(`  checkCollisions: ${camera.checkCollisions}`);
+            console.log(`  applyGravity: ${camera.applyGravity}`);
+            console.log(`  ellipsoid: (${camera.ellipsoid?.x}, ${camera.ellipsoid?.y}, ${camera.ellipsoid?.z})`);
+        } else {
+            console.warn('[CAMERA COLLISION] No active camera found!');
+        }
+
+        // Check ground collision settings
+        const ground = scene.getMeshByName('ground');
+        if (ground) {
+            console.log('[GROUND COLLISION]');
+            console.log(`  checkCollisions: ${ground.checkCollisions}`);
+            console.log(`  isPickable: ${ground.isPickable}`);
+            console.log(`  hasPhysicsBody: ${!!ground.physicsBody}`);
+            if (ground.metadata) {
+                console.log(`  metadata.collisionType: ${ground.metadata.collisionType}`);
+            }
+        } else {
+            console.warn('[GROUND COLLISION] Ground mesh not found!');
+        }
+
+        // Check demo object collision settings
+        console.log('[DEMO OBJECTS COLLISION]');
+        const demoObjects = scene.meshes.filter(m =>
+            m.name !== 'ground' &&
+            !m.name.startsWith('chunk_') &&
+            !m.name.includes('_mat') &&
+            m.name !== '__root__'
+        );
+
+        demoObjects.forEach(mesh => {
+            console.log(`  ${mesh.name}:`);
+            console.log(`    checkCollisions: ${mesh.checkCollisions}`);
+            console.log(`    isPickable: ${mesh.isPickable}`);
+            console.log(`    hasPhysicsBody: ${!!mesh.physicsBody}`);
+            if (mesh.metadata?.physicsSettings) {
+                console.log(`    physics.mass: ${mesh.metadata.physicsSettings.mass}`);
+                console.log(`    physics.shape: ${mesh.metadata.physicsSettings.shape}`);
+            }
+        });
+
+        console.log('='.repeat(80));
+        console.log('[COLLISION DIAGNOSTIC] Verification complete');
+        console.log('='.repeat(80));
     }
 
     /**
