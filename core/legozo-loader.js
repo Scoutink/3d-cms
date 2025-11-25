@@ -456,12 +456,34 @@ export class LegozoLoader {
 
                     // Enable physics body if physics is enabled
                     if (collisionPlugin.physicsEnabled) {
-                        collisionPlugin.enablePhysicsBody(mesh, {
-                            mass: 1,  // Dynamic object (can move)
-                            restitution: 0.5,  // Medium bounce
-                            friction: 0.5,  // Normal friction
-                            shape: BABYLON.PhysicsShapeType.BOX
-                        });
+                        // Determine correct physics shape based on mesh type
+                        let physicsShape = BABYLON.PhysicsShapeType.BOX;
+                        switch (objConfig.type) {
+                            case 'sphere':
+                                physicsShape = BABYLON.PhysicsShapeType.SPHERE;
+                                break;
+                            case 'cylinder':
+                                physicsShape = BABYLON.PhysicsShapeType.CYLINDER;
+                                break;
+                            case 'box':
+                            case 'plane':
+                            case 'torus':
+                            default:
+                                physicsShape = BABYLON.PhysicsShapeType.BOX;
+                                break;
+                        }
+
+                        try {
+                            collisionPlugin.enablePhysicsBody(mesh, {
+                                mass: 1,  // Dynamic object (can move)
+                                restitution: 0.5,  // Medium bounce
+                                friction: 0.5,  // Normal friction
+                                shape: physicsShape
+                            });
+                            console.log(`[Legozo] Enabled physics on: ${mesh.name} (${objConfig.type})`);
+                        } catch (error) {
+                            console.warn(`[Legozo] Failed to enable physics on ${mesh.name}:`, error);
+                        }
                     }
 
                     console.log(`[Legozo] Enabled collision on: ${mesh.name}`);
