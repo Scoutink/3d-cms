@@ -119,6 +119,9 @@ class PropertiesPlugin extends Plugin {
         // Setup increment/decrement button handlers
         this.setupIncrementButtons();
 
+        // Setup material button handlers
+        this.setupMaterialButtons();
+
         console.log('[PROPS.2] Input elements cached');
     }
 
@@ -148,6 +151,59 @@ class PropertiesPlugin extends Plugin {
         });
 
         console.log('[PROPS.2.1] Spinner buttons setup complete');
+    }
+
+    // [PROPS.2.2] Setup material button handlers
+    setupMaterialButtons() {
+        // Find all material buttons with onclick attribute
+        const materialButtons = this.panelElement.querySelectorAll('button[onclick^="applyMaterial"]');
+
+        materialButtons.forEach(button => {
+            // Extract material name from onclick attribute
+            const onclickAttr = button.getAttribute('onclick');
+            const match = onclickAttr.match(/applyMaterial\('(\w+)'\)/);
+
+            if (match) {
+                const materialName = match[1];
+
+                // Remove onclick attribute
+                button.removeAttribute('onclick');
+
+                // Add click handler
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.applyMaterialToSelected(materialName);
+                });
+            }
+        });
+
+        console.log('[PROPS.2.2] Material buttons setup complete');
+    }
+
+    // [PROPS.2.3] Apply material to selected object
+    applyMaterialToSelected(presetName) {
+        if (!this.selectedObject) {
+            console.warn('[PROPS.2.3] No object selected');
+            return;
+        }
+
+        // Get MaterialPlugin
+        const materialPlugin = this.scene.metadata?.materialPlugin ||
+                             window.engine?.plugins?.get('material');
+
+        if (!materialPlugin) {
+            console.error('[PROPS.2.3] MaterialPlugin not found');
+            return;
+        }
+
+        // Create material from preset
+        const material = materialPlugin.usePreset(presetName);
+
+        if (material) {
+            // Apply to selected object
+            materialPlugin.applyMaterial(this.selectedObject, material);
+            console.log(`[PROPS.2.3] Applied material "${presetName}" to ${this.selectedObject.name}`);
+        }
     }
 
     // [PROPS.3] Setup event listeners
