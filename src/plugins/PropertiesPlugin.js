@@ -123,10 +123,12 @@ class PropertiesPlugin extends Plugin {
     setupEventListeners() {
         // Listen to selection events
         this.events.on('interaction:selected', (data) => {
+            console.log('[PROPS.3] 📡 Received "interaction:selected" event:', data.name);
             this.showPanel(data.mesh);
         });
 
         this.events.on('interaction:deselected', (data) => {
+            console.log('[PROPS.3] 📡 Received "interaction:deselected" event:', data.name);
             // Hide panel if no objects selected
             // Note: We need to check if there are other selected objects
             setTimeout(() => {
@@ -139,10 +141,11 @@ class PropertiesPlugin extends Plugin {
 
         // Update panel when gizmo finishes dragging
         this.events.on('gizmo:drag:end', () => {
+            console.log('[PROPS.3] 📡 Received "gizmo:drag:end" event');
             this.updatePanelValues();
         });
 
-        console.log('[PROPS.3] Event listeners setup');
+        console.log('[PROPS.3] ✓ Event listeners registered');
     }
 
     // [PROPS.4] Start real-time sync interval
@@ -158,10 +161,21 @@ class PropertiesPlugin extends Plugin {
 
     // [PROPS.5] Show properties panel
     showPanel(mesh) {
-        if (!mesh || !this.panelElement) return;
+        console.log('[PROPS.5] ▶ showPanel() called for:', mesh?.name);
+
+        if (!mesh) {
+            console.log('[PROPS.5] ❌ No mesh provided');
+            return;
+        }
+
+        if (!this.panelElement) {
+            console.log('[PROPS.5] ❌ Panel element not found in DOM');
+            return;
+        }
 
         // Don't show for ground, skybox, or terrain chunks
         if (mesh.name === 'ground' || mesh.name === 'skybox' || mesh.name.startsWith('chunk_')) {
+            console.log('[PROPS.5] ⚠ Skipping panel (ground/skybox/chunk)');
             return;
         }
 
@@ -169,12 +183,13 @@ class PropertiesPlugin extends Plugin {
         this.isVisible = true;
 
         // Show panel
+        console.log('[PROPS.5] Adding "visible" class to panel element');
         this.panelElement.classList.add('visible');
 
         // Update values
         this.updatePanelValues();
 
-        console.log(`[PROPS.5] Panel shown for: ${mesh.name}`);
+        console.log(`[PROPS.5] ✅ Panel shown for: ${mesh.name}`);
     }
 
     // [PROPS.6] Hide properties panel

@@ -263,6 +263,12 @@ class InteractionPlugin extends Plugin {
         const pickInfo = pointerInfo.pickInfo;
         const event = pointerInfo.event;
 
+        console.log('[INT.2] ▶ Pointer UP event received', {
+            hit: pickInfo?.hit,
+            mesh: pickInfo?.pickedMesh?.name,
+            isDragging: this.isDragging
+        });
+
         // [INT.3] End drag if dragging
         if (this.isDragging) {
             this.endDrag();
@@ -270,10 +276,12 @@ class InteractionPlugin extends Plugin {
         }
 
         if (!pickInfo || !pickInfo.hit || !pickInfo.pickedMesh) {
+            console.log('[INT.2] ❌ No mesh picked (clicked empty space)');
             return;
         }
 
         const mesh = pickInfo.pickedMesh;
+        console.log('[INT.2] ✓ Mesh picked:', mesh.name);
 
         // [INT.2] Handle right-click
         if (event.button === 2) {
@@ -328,9 +336,17 @@ class InteractionPlugin extends Plugin {
             }
 
             // [INT.4] Handle selection
+            console.log('[INT.4] 🔍 Checking if mesh is selectable:', {
+                meshName: mesh.name,
+                isSelectable: this.selectableMeshes.has(mesh),
+                totalSelectableMeshes: this.selectableMeshes.size
+            });
+
             if (this.selectableMeshes.has(mesh)) {
+                console.log('[INT.4] ✓ Mesh IS selectable, processing selection...');
                 if (event.ctrlKey || event.metaKey) {
                     // Multi-select toggle
+                    console.log('[INT.4] Multi-select mode (Ctrl held)');
                     if (this.selectedMeshes.has(mesh)) {
                         this.deselect(mesh);
                     } else {
@@ -338,9 +354,12 @@ class InteractionPlugin extends Plugin {
                     }
                 } else {
                     // Single select (deselect others)
+                    console.log('[INT.4] Single-select mode');
                     this.deselectAll();
                     this.select(mesh);
                 }
+            } else {
+                console.log('[INT.4] ❌ Mesh is NOT selectable');
             }
         }
     }
@@ -466,7 +485,7 @@ class InteractionPlugin extends Plugin {
     // USER REQUIREMENT: Selection system with multi-select
     makeSelectable(mesh) {
         this.selectableMeshes.add(mesh);
-        console.log(`[INT.4] Mesh ${mesh.name} is now selectable`);
+        console.log(`[INT.4] ✅ Mesh "${mesh.name}" is now selectable (Total: ${this.selectableMeshes.size})`);
     }
 
     // [INT.4] Remove selectable
@@ -480,28 +499,36 @@ class InteractionPlugin extends Plugin {
 
     // [INT.4] Select mesh
     select(mesh) {
+        console.log('[INT.4] ▶ select() called for:', mesh.name);
+
         if (!this.selectableMeshes.has(mesh)) {
-            console.warn(`[INT.4] Mesh ${mesh.name} is not selectable`);
+            console.warn(`[INT.4] ❌ Mesh ${mesh.name} is not selectable`);
             return;
         }
 
         if (this.selectedMeshes.has(mesh)) {
+            console.log(`[INT.4] ⚠ Mesh ${mesh.name} already selected`);
             return; // Already selected
         }
 
         this.selectedMeshes.add(mesh);
+        console.log('[INT.4] ✓ Added to selectedMeshes Set');
 
         // [INT.4.1] Visual feedback (outline or highlight)
         this.applySelectionVisual(mesh);
+        console.log('[INT.4] ✓ Applied selection visual (green glow)');
 
         // [EVT.2] Emit selected event
+        const listenerCount = this.events.listenerCount('interaction:selected');
+        console.log(`[INT.4] 📡 Emitting 'interaction:selected' event (${listenerCount} listeners)`);
+
         this.events.emit('interaction:selected', {
             mesh: mesh,
             name: mesh.name,
             selectedCount: this.selectedMeshes.size
         });
 
-        console.log(`[INT.4] Selected: ${mesh.name}`);
+        console.log(`[INT.4] ✅ Selected: ${mesh.name}`);
     }
 
     // [INT.4] Deselect mesh
