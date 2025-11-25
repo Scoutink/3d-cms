@@ -66,14 +66,24 @@
                     engine.scene.metadata = { mode: newMode };
                 }
 
+                // Emit mode:changed event to notify plugins (InteractionPlugin, etc.)
+                if (engine.events) {
+                    engine.events.emit('mode:changed', { mode: newMode });
+                    console.log(`[Legozo] Emitted mode:changed event: ${newMode}`);
+                }
+
                 // Update UI
                 if (newMode === 'view') {
                     controlPanel?.classList.add('hidden');
                     propertiesPanel?.classList.add('hidden');
+                    document.body.classList.add('view-mode');
+                    document.body.classList.remove('edit-mode');
                     if (btn) btn.innerHTML = '✏️ Switch to Edit Mode (Tab)';
                 } else {
                     controlPanel?.classList.remove('hidden');
                     propertiesPanel?.classList.remove('hidden');
+                    document.body.classList.add('edit-mode');
+                    document.body.classList.remove('view-mode');
                     if (btn) btn.innerHTML = '👁️ Switch to View Mode (Tab)';
                 }
 
