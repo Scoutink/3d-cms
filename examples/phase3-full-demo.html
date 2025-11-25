@@ -546,6 +546,8 @@
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <!-- [COL.1.2] Havok Physics Engine - Required for physics simulation and collision -->
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
 </head>
 <body>
     <!-- Canvas -->
@@ -1400,6 +1402,17 @@
             ground.checkCollisions = true;
             groundPlugin.setColor('#3a5a3a');
 
+            // [COL.3] Enable physics body for ground (static - mass = 0)
+            // This makes the ground a solid physics object that other objects can rest on
+            const collisionPlugin = window.engine.getPlugin('collision');
+            if (collisionPlugin && collisionPlugin.physicsEnabled) {
+                collisionPlugin.enablePhysicsBody(ground, {
+                    mass: 0,  // Static object (immovable)
+                    restitution: 0.2,
+                    friction: 0.8
+                });
+            }
+
             // [LGT] Lighting
             lightingPlugin.usePreset('day');
 
@@ -1593,6 +1606,21 @@
                 text: `${shape.toUpperCase()}\nClick to select\nDouble-click to spin\nDrag to move`,
                 offset: { x: 0, y: 80 }
             });
+
+            // [COL.2] Enable collision detection
+            // This allows the camera to collide with objects instead of passing through them
+            mesh.checkCollisions = true;
+
+            // [COL.3] Enable physics body (if physics is enabled)
+            // Dynamic objects with realistic physics simulation
+            const collisionPlugin = window.engine.getPlugin('collision');
+            if (collisionPlugin && collisionPlugin.physicsEnabled) {
+                collisionPlugin.enablePhysicsBody(mesh, {
+                    mass: 1,           // Dynamic object (affected by gravity/forces)
+                    restitution: 0.3,  // Low bounce
+                    friction: 0.5      // Medium friction
+                });
+            }
         }
 
         // [DEMO.2] Setup UI
