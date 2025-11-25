@@ -1,32 +1,39 @@
 /**
- * Legozo Module Loader
- * Orchestrates loading and initialization of the 3D CMS
+ * Legozo Module Loader v2.0
+ * Orchestrates loading and initialization of the modular 3D CMS
+ *
+ * Phase 2 Updates:
+ * - Uses new Module system (ModuleBase)
+ * - Uses DependencyResolver for load order
+ * - Instantiates UI controllers
+ * - Proper module lifecycle management
  *
  * Architecture:
  *   1. Load configuration
  *   2. Load CSS styles
  *   3. Load HTML templates
  *   4. Initialize core engine
- *   5. Load and initialize modules
- *   6. Start the scene
- *
- * Usage:
- *   const legozo = new LegozoLoader();
- *   await legozo.init('./config/scene-demo.json');
- *   await legozo.start();
+ *   5. Load modules (using imports)
+ *   6. Resolve dependencies
+ *   7. Initialize modules in order
+ *   8. Initialize controllers
+ *   9. Start modules
+ *   10. Create demo objects
  */
 
 import BabylonEngine from '../src/core/BabylonEngine.js';
 import ConfigLoader from '../src/config/ConfigLoader.js';
 import TemplateLoader from '../ui/template-loader.js';
+import DependencyResolver from './dependency-resolver.js';
 
 export class LegozoLoader {
     constructor() {
         this.config = null;
         this.engine = null;
-        this.modules = new Map();
+        this.modules = new Map(); // name → module instance
+        this.controllers = new Map(); // name → controller instance
         this.templates = new TemplateLoader();
-        this.loadingCallbacks = [];
+        this.resolver = new DependencyResolver();
     }
 
     /**
@@ -35,7 +42,7 @@ export class LegozoLoader {
      * @returns {Promise<void>}
      */
     async init(configPath) {
-        console.log('[Legozo] Initializing...');
+        console.log('[Legozo] Initializing v2.0 (Module System)...');
 
         try {
             // 1. Load configuration
@@ -50,7 +57,7 @@ export class LegozoLoader {
             // 4. Initialize core engine
             await this.initializeEngine();
 
-            // 5. Load modules
+            // 5. Load module classes
             await this.loadModules();
 
             console.log('[Legozo] Initialization complete');
@@ -68,19 +75,32 @@ export class LegozoLoader {
         console.log('[Legozo] Starting...');
 
         try {
-            // Initialize modules
+            // 6. Resolve module dependencies
+            await this.resolveDependencies();
+
+            // 7. Initialize modules (in dependency order)
             await this.initializeModules();
 
-            // Start engine
+            // 8. Start engine (this starts old plugins too)
             await this.engine.start();
 
-            // Start modules
+            // 9. Start modules
             await this.startModules();
 
-            // Hide loading screen
+            // 10. Initialize controllers
+            await this.initializeControllers();
+
+            // 11. Create demo objects
+            if (this.config.demoObjects) {
+                await this.createDemoObjects();
+            }
+
+            // 12. Hide loading screen
             this.hideLoadingScreen();
 
             console.log('[Legozo] Started successfully');
+            console.log('[Legozo] Active modules:', Array.from(this.modules.keys()).join(', '));
+
         } catch (error) {
             console.error('[Legozo] Start failed:', error);
             throw error;
@@ -168,7 +188,7 @@ export class LegozoLoader {
     }
 
     /**
-     * Load plugin modules
+     * Load module classes
      * @returns {Promise<void>}
      */
     async loadModules() {
@@ -176,9 +196,10 @@ export class LegozoLoader {
 
         const moduleNames = this.config.modules || [];
 
-        // Import plugins dynamically
+        // Module imports (new module classes)
         const imports = {
-            'ground': () => import('../src/plugins/GroundPlugin.js'),
+            'ground': () => import('../modules/ground/ground.module.js'),
+            // Old plugins (will be converted gradually)
             'lighting': () => import('../src/plugins/LightingPlugin.js'),
             'shadow': () => import('../src/plugins/ShadowPlugin.js'),
             'material': () => import('../src/plugins/MaterialPlugin.js'),
@@ -188,36 +209,93 @@ export class LegozoLoader {
             'ui': () => import('../src/plugins/UIPlugin.js'),
             'performance': () => import('../src/plugins/PerformancePlugin.js'),
             'gizmo': () => import('../src/plugins/GizmoPlugin.js'),
-            'properties': () => import('../src/plugins/PropertiesPlugin.js'),
-            'infiniteGround': () => import('../src/plugins/InfiniteGroundPlugin.js')
+            'properties': () => import('../src/plugins/PropertiesPlugin.js')
         };
 
         // Load each module
         for (const name of moduleNames) {
             if (imports[name]) {
-                const module = await imports[name]();
-                const PluginClass = module.default;
-                const plugin = new PluginClass();
-                this.engine.registerPlugin(name, plugin);
-                this.modules.set(name, plugin);
-                console.log(`[Legozo] Loaded module: ${name}`);
+                try {
+                    const module = await imports[name]();
+                    const ModuleClass = module.default || module.GroundModule;
+
+                    // Check if it's a new-style module (extends ModuleBase)
+                    if (ModuleClass.prototype && ModuleClass.prototype._onInit !== undefined) {
+                        // New module system
+                        const instance = new ModuleClass();
+                        this.modules.set(name, instance);
+                        console.log(`[Legozo] Loaded NEW module: ${name} v${instance.version}`);
+                    } else {
+                        // Old plugin system (register directly)
+                        const plugin = new ModuleClass();
+                        this.engine.registerPlugin(name, plugin);
+                        console.log(`[Legozo] Loaded OLD plugin: ${name}`);
+                    }
+                } catch (error) {
+                    console.error(`[Legozo] Failed to load ${name}:`, error);
+                }
             } else {
                 console.warn(`[Legozo] Unknown module: ${name}`);
             }
         }
 
-        console.log('[Legozo] Modules loaded');
+        console.log(`[Legozo] Loaded ${this.modules.size} new modules`);
     }
 
     /**
-     * Initialize all modules
+     * Resolve module dependencies
+     * @returns {Promise<void>}
+     */
+    async resolveDependencies() {
+        if (this.modules.size === 0) {
+            console.log('[Legozo] No modules to resolve');
+            return;
+        }
+
+        this.updateLoading(55, 'Resolving dependencies...');
+
+        try {
+            const moduleArray = Array.from(this.modules.values());
+            const sorted = this.resolver.resolve(moduleArray);
+
+            // Update modules map with sorted order
+            const sortedModules = new Map();
+            for (const module of sorted) {
+                sortedModules.set(module.name, module);
+            }
+            this.modules = sortedModules;
+
+            console.log('[Legozo] Dependency order:', sorted.map(m => m.name).join(' → '));
+
+            // Visualize dependency graph (for debugging)
+            if (this.config.debug) {
+                console.log(this.resolver.visualize(moduleArray));
+            }
+
+        } catch (error) {
+            console.error('[Legozo] Dependency resolution failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Initialize all modules (in dependency order)
      * @returns {Promise<void>}
      */
     async initializeModules() {
         this.updateLoading(60, 'Initializing modules...');
 
-        // Modules are initialized when registered, nothing more to do
-        console.log('[Legozo] Modules initialized');
+        for (const [name, module] of this.modules.entries()) {
+            try {
+                await module.init(this.engine, this.config);
+                console.log(`[Legozo] Initialized: ${name}`);
+            } catch (error) {
+                console.error(`[Legozo] Failed to initialize ${name}:`, error);
+                throw error;
+            }
+        }
+
+        console.log('[Legozo] All modules initialized');
     }
 
     /**
@@ -227,12 +305,64 @@ export class LegozoLoader {
     async startModules() {
         this.updateLoading(70, 'Starting modules...');
 
-        // Create demo objects if configured
-        if (this.config.demoObjects) {
-            await this.createDemoObjects();
+        for (const [name, module] of this.modules.entries()) {
+            try {
+                await module.start();
+                console.log(`[Legozo] Started: ${name}`);
+            } catch (error) {
+                console.error(`[Legozo] Failed to start ${name}:`, error);
+                // Don't throw - allow other modules to start
+            }
         }
 
-        console.log('[Legozo] Modules started');
+        console.log('[Legozo] All modules started');
+    }
+
+    /**
+     * Initialize UI controllers
+     * @returns {Promise<void>}
+     */
+    async initializeControllers() {
+        this.updateLoading(75, 'Initializing controllers...');
+
+        // Controller imports
+        const controllerImports = {
+            'ground': () => import('../modules/ground/ground.controller.js')
+        };
+
+        for (const [name, module] of this.modules.entries()) {
+            if (controllerImports[name]) {
+                try {
+                    const controllerModule = await controllerImports[name]();
+                    const ControllerClass = controllerModule.default || controllerModule.GroundController;
+
+                    // Find container for this controller
+                    const container = document.querySelector('.control-panel');
+                    if (!container) {
+                        console.warn(`[Legozo] No container found for ${name} controller`);
+                        continue;
+                    }
+
+                    // Instantiate controller
+                    const controller = new ControllerClass(module);
+                    controller.setContainer(container);
+
+                    // Initialize controller
+                    await controller.init();
+
+                    // Link controller to module
+                    module.setController(controller);
+
+                    this.controllers.set(name, controller);
+                    console.log(`[Legozo] Initialized ${name} controller`);
+
+                } catch (error) {
+                    console.error(`[Legozo] Failed to initialize ${name} controller:`, error);
+                }
+            }
+        }
+
+        console.log(`[Legozo] Initialized ${this.controllers.size} controllers`);
     }
 
     /**
@@ -352,14 +482,35 @@ export class LegozoLoader {
     }
 
     /**
+     * Get controller
+     * @param {string} name - Controller name
+     * @returns {Object|null}
+     */
+    getController(name) {
+        return this.controllers.get(name) || null;
+    }
+
+    /**
      * Dispose and cleanup
      */
     dispose() {
+        // Dispose controllers
+        for (const controller of this.controllers.values()) {
+            controller.dispose();
+        }
+
+        // Dispose modules
+        for (const module of this.modules.values()) {
+            module.dispose();
+        }
+
+        // Dispose engine
         if (this.engine) {
             this.engine.dispose();
         }
 
         this.modules.clear();
+        this.controllers.clear();
         this.templates.clearCache();
 
         console.log('[Legozo] Disposed');
