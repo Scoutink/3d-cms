@@ -18,28 +18,37 @@
     <h3>🌍 Ground Rotation</h3>
     <div class="control-group">
         <label>Quick Presets</label>
-        <button onclick="setGroundRotationPreset('horizontal')">➡️ Horizontal</button>
-        <button onclick="setGroundRotationPreset('vertical')">⬆️ Vertical</button>
-        <button onclick="setGroundRotationPreset('diagonal45')">↗️ Diagonal 45°</button>
+        <button data-action="ground:preset:horizontal">➡️ Horizontal</button>
+        <button data-action="ground:preset:vertical">⬆️ Vertical</button>
+        <button data-action="ground:preset:diagonal45">↗️ Diagonal 45°</button>
     </div>
 
     <div class="control-group">
         <div class="slider-container">
             <div class="slider-label">
                 <label>X-Axis Tilt</label>
-                <span class="value-display" id="rotX">0°</span>
+                <span class="value-display" id="rotationXValue">0°</span>
             </div>
-            <input type="range" id="rotXSlider" min="-180" max="180" value="0"
-                   oninput="updateGroundRotation()">
+            <input type="range" id="rotationX" min="-180" max="180" value="0"
+                   data-action="ground:rotate:x">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <label>Y-Axis Tilt</label>
+                <span class="value-display" id="rotationYValue">0°</span>
+            </div>
+            <input type="range" id="rotationY" min="-180" max="180" value="0"
+                   data-action="ground:rotate:y">
         </div>
 
         <div class="slider-container">
             <div class="slider-label">
                 <label>Z-Axis Tilt</label>
-                <span class="value-display" id="rotZ">0°</span>
+                <span class="value-display" id="rotationZValue">0°</span>
             </div>
-            <input type="range" id="rotZSlider" min="-180" max="180" value="0"
-                   oninput="updateGroundRotation()">
+            <input type="range" id="rotationZ" min="-180" max="180" value="0"
+                   data-action="ground:rotate:z">
         </div>
     </div>
 
@@ -71,30 +80,32 @@
     <!-- [GRD] Ground Edge Behavior -->
     <h3>🚧 Ground Edge Behavior</h3>
     <div class="control-group">
-        <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
-        <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+        <button data-action="ground:edge:stop">🛑 Stop at Edge</button>
+        <button data-action="ground:edge:teleport">🔄 Teleport to Start</button>
+        <button data-action="ground:edge:wrap">🔁 Wrap Around</button>
+        <button data-action="ground:edge:none">🚫 No Limit</button>
     </div>
 
     <!-- [IGR] Infinite Terrain -->
     <h3>♾️ Infinite Terrain</h3>
     <div class="control-group">
         <label>Terrain Mode</label>
-        <button onclick="toggleInfiniteTerrain()" id="terrainModeBtn">🌍 Enable Infinite Terrain</button>
+        <button data-action="ground:infinite:toggle" id="terrainModeBtn">🌍 Enable Infinite Terrain</button>
     </div>
 
-    <div class="control-group" id="infiniteTerrainControls" style="display: none;">
+    <div class="control-group" id="infiniteControls" style="display: none;">
         <div class="slider-container">
             <div class="slider-label">
                 <label>View Distance</label>
-                <span class="value-display" id="viewDistance">3 chunks</span>
+                <span class="value-display" id="viewDistanceValue">3 chunks</span>
             </div>
             <input type="range" id="viewDistanceSlider" min="1" max="5" value="3"
-                   oninput="updateViewDistance(this.value)">
+                   data-action="ground:infinite:viewdistance">
         </div>
 
         <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
             <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" id="heightVariationCheck" onchange="toggleHeightVariation(this.checked)"
+                <input type="checkbox" id="heightVariationCheck" data-action="ground:infinite:height"
                        style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
                 <span>🏔️ Enable Height Variation (Hills)</span>
             </label>
