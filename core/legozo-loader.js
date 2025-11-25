@@ -200,9 +200,12 @@ export class LegozoLoader {
         // Module imports (new module classes)
         const imports = {
             'ground': () => import('../modules/ground/ground.module.js'),
+            'physics': () => import('../modules/physics/physics.module.js'),
             // Old plugins (will be converted gradually)
             'camera': () => import('../src/plugins/CameraPlugin.js'),
             'movement': () => import('../src/plugins/MovementPlugin.js'),
+            'collision': () => import('../src/plugins/CollisionPlugin.js'),
+            'gravity': () => import('../src/plugins/GravityPlugin.js'),
             'lighting': () => import('../src/plugins/LightingPlugin.js'),
             'shadow': () => import('../src/plugins/ShadowPlugin.js'),
             'material': () => import('../src/plugins/MaterialPlugin.js'),
@@ -441,6 +444,55 @@ export class LegozoLoader {
             if (mesh) {
                 const interactionPlugin = this.engine.plugins.get('interaction');
                 const propertiesPlugin = this.engine.plugins.get('properties');
+                const collisionPlugin = this.engine.plugins.get('collision');
+
+                // Enable collision on objects
+                if (collisionPlugin) {
+                    // Enable simple collision for camera
+                    collisionPlugin.enableSimpleCollision(mesh, {
+                        checkCollisions: true,
+                        pickable: true
+                    });
+
+                    // Enable physics body if physics is enabled
+                    if (collisionPlugin.physicsEnabled) {
+                        // Determine correct physics shape based on mesh type
+                        let physicsShape = BABYLON.PhysicsShapeType.BOX;
+                        switch (objConfig.type) {
+                            case 'sphere':
+                                physicsShape = BABYLON.PhysicsShapeType.SPHERE;
+                                break;
+                            case 'cylinder':
+                                physicsShape = BABYLON.PhysicsShapeType.CYLINDER;
+                                break;
+                            case 'box':
+                            case 'plane':
+                            case 'torus':
+                            default:
+                                physicsShape = BABYLON.PhysicsShapeType.BOX;
+                                break;
+                        }
+
+                        try {
+                            collisionPlugin.enablePhysicsBody(mesh, {
+                                mass: 0,  // Static object (immovable) - required for camera collision to work
+                                restitution: 0.2,  // Low bounce for static objects
+                                friction: 0.8,  // High friction
+                                shape: physicsShape
+                            });
+
+                            // CRITICAL: Ensure checkCollisions stays enabled for camera collision
+                            // Physics bodies can override this, so we explicitly set it again
+                            mesh.checkCollisions = true;
+
+                            console.log(`[Legozo] Enabled physics on: ${mesh.name} (${objConfig.type}, STATIC)`);
+                        } catch (error) {
+                            console.warn(`[Legozo] Failed to enable physics on ${mesh.name}:`, error);
+                        }
+                    }
+
+                    console.log(`[Legozo] Enabled collision on: ${mesh.name}`);
+                }
 
                 if (interactionPlugin) {
                     // Make mesh hoverable (highlight on hover)
@@ -475,6 +527,70 @@ export class LegozoLoader {
         }
 
         console.log(`[Legozo] Created ${objects.length} demo objects`);
+
+        // DIAGNOSTIC: Verify collision settings on all meshes
+        this.verifyCollisionSettings();
+    }
+
+    /**
+     * DIAGNOSTIC: Verify collision settings on camera, ground, and objects
+     * This helps debug collision issues by logging all relevant settings
+     */
+    verifyCollisionSettings() {
+        console.log('='.repeat(80));
+        console.log('[COLLISION DIAGNOSTIC] Verifying all collision settings...');
+        console.log('='.repeat(80));
+
+        const scene = this.engine.scene;
+        const camera = scene.activeCamera;
+
+        // Check camera collision settings
+        if (camera) {
+            console.log('[CAMERA COLLISION]');
+            console.log(`  checkCollisions: ${camera.checkCollisions}`);
+            console.log(`  applyGravity: ${camera.applyGravity}`);
+            console.log(`  ellipsoid: (${camera.ellipsoid?.x}, ${camera.ellipsoid?.y}, ${camera.ellipsoid?.z})`);
+        } else {
+            console.warn('[CAMERA COLLISION] No active camera found!');
+        }
+
+        // Check ground collision settings
+        const ground = scene.getMeshByName('ground');
+        if (ground) {
+            console.log('[GROUND COLLISION]');
+            console.log(`  checkCollisions: ${ground.checkCollisions}`);
+            console.log(`  isPickable: ${ground.isPickable}`);
+            console.log(`  hasPhysicsBody: ${!!ground.physicsBody}`);
+            if (ground.metadata) {
+                console.log(`  metadata.collisionType: ${ground.metadata.collisionType}`);
+            }
+        } else {
+            console.warn('[GROUND COLLISION] Ground mesh not found!');
+        }
+
+        // Check demo object collision settings
+        console.log('[DEMO OBJECTS COLLISION]');
+        const demoObjects = scene.meshes.filter(m =>
+            m.name !== 'ground' &&
+            !m.name.startsWith('chunk_') &&
+            !m.name.includes('_mat') &&
+            m.name !== '__root__'
+        );
+
+        demoObjects.forEach(mesh => {
+            console.log(`  ${mesh.name}:`);
+            console.log(`    checkCollisions: ${mesh.checkCollisions}`);
+            console.log(`    isPickable: ${mesh.isPickable}`);
+            console.log(`    hasPhysicsBody: ${!!mesh.physicsBody}`);
+            if (mesh.metadata?.physicsSettings) {
+                console.log(`    physics.mass: ${mesh.metadata.physicsSettings.mass}`);
+                console.log(`    physics.shape: ${mesh.metadata.physicsSettings.shape}`);
+            }
+        });
+
+        console.log('='.repeat(80));
+        console.log('[COLLISION DIAGNOSTIC] Verification complete');
+        console.log('='.repeat(80));
     }
 
     /**

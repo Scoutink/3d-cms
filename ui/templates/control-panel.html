@@ -157,6 +157,33 @@
         <button onclick="setShadowQuality('ultra')">🔮 Ultra</button>
     </div>
 
+    <!-- [PHY] Physics System -->
+    <h3>⚛️ Physics System</h3>
+    <div class="control-group" style="background: rgba(156, 39, 176, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #9C27B0;">
+        <p style="margin: 0; font-size: 11px; color: #BA68C8; line-height: 1.6;">
+            ⚡ <strong>Havok Physics:</strong> Collision detection with gravity simulation
+        </p>
+    </div>
+
+    <div class="control-group">
+        <label>Gravity Presets</label>
+        <div class="material-grid">
+            <button data-action="physics:gravity:preset" data-value="earth">🌍 Earth</button>
+            <button data-action="physics:gravity:preset" data-value="moon">🌙 Moon</button>
+            <button data-action="physics:gravity:preset" data-value="mars">🔴 Mars</button>
+            <button data-action="physics:gravity:preset" data-value="zeroG">🚀 Zero-G</button>
+            <button data-action="physics:gravity:preset" data-value="arcade">🎮 Arcade</button>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="cameraCollision" checked data-action="physics:camera:collision"
+                   style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+            <span>🛡️ Camera Collision</span>
+        </label>
+    </div>
+
     <!-- [MAT] Materials -->
     <!-- [FIX #9] Material Gallery moved to Properties Panel -->
 </div>
