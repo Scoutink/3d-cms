@@ -200,6 +200,7 @@ export class LegozoLoader {
         const imports = {
             'ground': () => import('../modules/ground/ground.module.js'),
             // Old plugins (will be converted gradually)
+            'camera': () => import('../src/plugins/CameraPlugin.js'),
             'lighting': () => import('../src/plugins/LightingPlugin.js'),
             'shadow': () => import('../src/plugins/ShadowPlugin.js'),
             'material': () => import('../src/plugins/MaterialPlugin.js'),
