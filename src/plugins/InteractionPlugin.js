@@ -54,6 +54,9 @@ class InteractionPlugin extends Plugin {
         this.draggedMesh = null;
         this.dragStartPosition = null;
         this.dragPlaneNormal = new BABYLON.Vector3(0, 1, 0); // Default: Y-up
+        this.dragCandidate = null; // Mesh that might be dragged
+        this.pointerDownPosition = null; // Screen position where pointer went down
+        this.dragThreshold = 5; // Pixels to move before drag starts
 
         // [INT.4] Selection state
         this.selectableMeshes = new Set();
@@ -143,6 +146,23 @@ class InteractionPlugin extends Plugin {
     // [INT.1] Handle pointer move (hover detection)
     handlePointerMove(pointerInfo) {
         const pickInfo = pointerInfo.pickInfo;
+
+        // [INT.3] Check if we should start dragging (distance threshold)
+        if (this.dragCandidate && !this.isDragging && this.pointerDownPosition) {
+            const currentX = this.scene.pointerX;
+            const currentY = this.scene.pointerY;
+            const deltaX = currentX - this.pointerDownPosition.x;
+            const deltaY = currentY - this.pointerDownPosition.y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            if (distance > this.dragThreshold) {
+                console.log('[INT.3] Drag threshold exceeded:', distance, '> threshold:', this.dragThreshold);
+                // Start dragging
+                this.startDrag(this.dragCandidate, pickInfo);
+                this.dragCandidate = null;
+                this.pointerDownPosition = null;
+            }
+        }
 
         // [INT.1.1] Check if we hit a hoverable mesh
         if (pickInfo && pickInfo.hit && pickInfo.pickedMesh) {
@@ -252,9 +272,11 @@ class InteractionPlugin extends Plugin {
 
         const mesh = pickInfo.pickedMesh;
 
-        // [INT.3] Check if draggable
+        // [INT.3] Store as drag candidate (don't start drag yet - wait for movement threshold)
         if (this.draggableMeshes.has(mesh) && event.button === 0) {
-            this.startDrag(mesh, pickInfo);
+            this.dragCandidate = mesh;
+            this.pointerDownPosition = { x: this.scene.pointerX, y: this.scene.pointerY };
+            console.log('[INT.3] Drag candidate registered:', mesh.name, 'at', this.pointerDownPosition);
         }
     }
 
@@ -266,13 +288,22 @@ class InteractionPlugin extends Plugin {
         console.log('[INT.2] ▶ Pointer UP event received', {
             hit: pickInfo?.hit,
             mesh: pickInfo?.pickedMesh?.name,
-            isDragging: this.isDragging
+            isDragging: this.isDragging,
+            dragCandidate: this.dragCandidate?.name
         });
 
         // [INT.3] End drag if dragging
         if (this.isDragging) {
             this.endDrag();
             return; // Don't process click if we were dragging
+        }
+
+        // [INT.3] Clear drag candidate if pointer up without drag
+        if (this.dragCandidate) {
+            console.log('[INT.3] Pointer up without drag - clearing candidate, processing click');
+            this.dragCandidate = null;
+            this.pointerDownPosition = null;
+            // Continue to process as regular click/selection
         }
 
         if (!pickInfo || !pickInfo.hit || !pickInfo.pickedMesh) {
@@ -566,6 +597,11 @@ class InteractionPlugin extends Plugin {
     // [INT.4] Get selected meshes
     getSelected() {
         return Array.from(this.selectedMeshes);
+    }
+
+    // [INT.4] Get selected meshes (alias for compatibility)
+    getSelectedMeshes() {
+        return this.getSelected();
     }
 
     // [INT.4] Check if mesh is selected
