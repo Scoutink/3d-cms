@@ -200,6 +200,7 @@ export class LegozoLoader {
         // Module imports (new module classes)
         const imports = {
             'ground': () => import('../modules/ground/ground.module.js'),
+            'physics': () => import('../modules/physics/physics.module.js'),
             // Old plugins (will be converted gradually)
             'camera': () => import('../src/plugins/CameraPlugin.js'),
             'movement': () => import('../src/plugins/MovementPlugin.js'),
