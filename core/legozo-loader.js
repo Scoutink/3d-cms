@@ -203,6 +203,8 @@ export class LegozoLoader {
             // Old plugins (will be converted gradually)
             'camera': () => import('../src/plugins/CameraPlugin.js'),
             'movement': () => import('../src/plugins/MovementPlugin.js'),
+            'collision': () => import('../src/plugins/CollisionPlugin.js'),
+            'gravity': () => import('../src/plugins/GravityPlugin.js'),
             'lighting': () => import('../src/plugins/LightingPlugin.js'),
             'shadow': () => import('../src/plugins/ShadowPlugin.js'),
             'material': () => import('../src/plugins/MaterialPlugin.js'),

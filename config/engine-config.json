@@ -14,11 +14,11 @@
     "speed": 0.5,
     "sensitivity": 3000,
     "collision": true,
-    "gravity": true,
+    "gravity": false,
     "ellipsoid": {
-      "x": 1,
-      "y": 1.5,
-      "z": 1
+      "x": 0.5,
+      "y": 1,
+      "z": 0.5
     }
   },
   "gravity": {

@@ -9,6 +9,8 @@
     "ground",
     "camera",
     "movement",
+    "collision",
+    "gravity",
     "lighting",
     "shadow",
     "material",
