@@ -202,6 +202,7 @@ export class LegozoLoader {
             'ground': () => import('../modules/ground/ground.module.js'),
             // Old plugins (will be converted gradually)
             'camera': () => import('../src/plugins/CameraPlugin.js'),
+            'movement': () => import('../src/plugins/MovementPlugin.js'),
             'lighting': () => import('../src/plugins/LightingPlugin.js'),
             'shadow': () => import('../src/plugins/ShadowPlugin.js'),
             'material': () => import('../src/plugins/MaterialPlugin.js'),
@@ -434,6 +435,42 @@ export class LegozoLoader {
                     );
                 }
                 mesh.material = mat;
+            }
+
+            // Register mesh with InteractionPlugin for clicking and selection
+            if (mesh) {
+                const interactionPlugin = this.engine.plugins.get('interaction');
+                const propertiesPlugin = this.engine.plugins.get('properties');
+
+                if (interactionPlugin) {
+                    // Make mesh hoverable (highlight on hover)
+                    interactionPlugin.makeHoverable(mesh, {
+                        onEnter: () => {
+                            console.log(`[Legozo] Hovering over: ${mesh.name}`);
+                        },
+                        onExit: () => {
+                            console.log(`[Legozo] Hover exit: ${mesh.name}`);
+                        }
+                    });
+
+                    // Make mesh clickable (show properties on click)
+                    interactionPlugin.makeClickable(mesh, () => {
+                        console.log(`[Legozo] Clicked: ${mesh.name}`);
+                        if (propertiesPlugin && propertiesPlugin.showProperties) {
+                            propertiesPlugin.showProperties(mesh);
+                        }
+                    });
+
+                    // Make mesh selectable (can be selected/deselected)
+                    interactionPlugin.makeSelectable(mesh);
+
+                    // Make mesh draggable (can be moved with mouse)
+                    interactionPlugin.makeDraggable(mesh, {
+                        dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) // Drag on XZ plane (Y-up)
+                    });
+
+                    console.log(`[Legozo] Registered ${mesh.name} with InteractionPlugin`);
+                }
             }
         }
 

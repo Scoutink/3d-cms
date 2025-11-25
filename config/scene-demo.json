@@ -8,6 +8,7 @@
   "modules": [
     "ground",
     "camera",
+    "movement",
     "lighting",
     "shadow",
     "material",
