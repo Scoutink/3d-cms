@@ -93,9 +93,11 @@
             // Ground Texture
             window.setGroundTexture = (texture) => {
                 const groundPlugin = engine.plugins.get('ground');
-                if (groundPlugin && groundPlugin.setTexture) {
-                    groundPlugin.setTexture(texture);
-                    console.log(`[Legozo] Ground texture set to: ${texture}`);
+                if (groundPlugin && groundPlugin.useTexturePreset) {
+                    groundPlugin.useTexturePreset(texture);
+                    console.log(`[Legozo] Ground texture preset applied: ${texture}`);
+                } else {
+                    console.warn('[Legozo] GroundPlugin or useTexturePreset method not found');
                 }
             };
 
@@ -103,8 +105,10 @@
             window.updateTextureTiling = (value) => {
                 const groundPlugin = engine.plugins.get('ground');
                 if (groundPlugin && groundPlugin.setTextureTiling) {
-                    groundPlugin.setTextureTiling(parseFloat(value));
+                    const scale = parseFloat(value);
+                    groundPlugin.setTextureTiling(scale, scale);
                     document.getElementById('textureTiling').textContent = `${value}x`;
+                    console.log(`[Legozo] Texture tiling set to: ${value}x`);
                 }
             };
 
