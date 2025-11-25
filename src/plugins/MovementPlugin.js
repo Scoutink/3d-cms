@@ -74,21 +74,34 @@ class MovementPlugin extends Plugin {
 
         // [MOV.1.1] Register keyboard movement mode
         const keyboardConfig = movementConfig.keyboard || {};
-        this.registerMode('keyboard', new KeyboardMovement(keyboardConfig));
+        const keyboardMode = new KeyboardMovement(keyboardConfig);
+        this.registerMode('keyboard', keyboardMode);
 
         // [MOV.1.1] Register click-to-move mode
         const clickConfig = movementConfig.clickToMove || {};
-        this.registerMode('clickToMove', new ClickToMoveMovement(
+        const clickToMoveMode = new ClickToMoveMovement(
             this.scene,
             this.events,
             clickConfig
-        ));
+        );
+        this.registerMode('clickToMove', clickToMoveMode);
 
-        // [MOV.1.2] Activate default mode
-        const defaultMode = movementConfig.defaultMode || 'keyboard';
-        this.setMode(defaultMode);
+        // [MOV.1.2] Activate BOTH modes for hybrid movement (keyboard + click-to-move)
+        // This allows users to use WASD AND click ground simultaneously
+        const camera = this.scene.activeCamera;
+        if (camera) {
+            keyboardMode.activate(camera, this.scene);
+            clickToMoveMode.activate(camera, this.scene);
+            this.activeMode = keyboardMode; // Primary mode for keyboard input
+            this.activeModeName = 'hybrid';
 
-        console.log(`[MOV.1] Movement system initialized: ${defaultMode} mode`);
+            // Store reference to click-to-move for combined velocity in update()
+            this.clickToMoveMode = clickToMoveMode;
+
+            console.log('[MOV.1] Movement system initialized: hybrid mode (keyboard + click-to-move)');
+        } else {
+            console.warn('[MOV.1] No active camera for movement');
+        }
     }
 
     // [MOV.1.1] Register a movement mode
@@ -154,8 +167,15 @@ class MovementPlugin extends Plugin {
             return;
         }
 
-        // [MOV.3.1] Get target velocity from active mode
-        this.targetVelocity = this.activeMode.getVelocity();
+        // [MOV.3.1] Get target velocity from active mode(s)
+        // Hybrid mode: combine keyboard + click-to-move velocities
+        if (this.activeModeName === 'hybrid' && this.clickToMoveMode) {
+            const keyboardVelocity = this.activeMode.getVelocity();
+            const clickToMoveVelocity = this.clickToMoveMode.getVelocity();
+            this.targetVelocity = keyboardVelocity.add(clickToMoveVelocity);
+        } else {
+            this.targetVelocity = this.activeMode.getVelocity();
+        }
 
         // [MOV.3.1] Apply global speed multiplier
         this.targetVelocity.scaleInPlace(this.globalSpeedMultiplier);
