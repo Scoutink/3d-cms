@@ -103,8 +103,7 @@
       "loading-screen",
       "welcome-message",
       "mode-toggle",
-      "control-panel",
-      "physics-panel"
+      "control-panel"
     ],
     "showWelcome": false,
     "showInstructions": true

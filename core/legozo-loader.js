@@ -475,12 +475,17 @@ export class LegozoLoader {
 
                         try {
                             collisionPlugin.enablePhysicsBody(mesh, {
-                                mass: 1,  // Dynamic object (can move)
-                                restitution: 0.5,  // Medium bounce
-                                friction: 0.5,  // Normal friction
+                                mass: 0,  // Static object (immovable) - required for camera collision to work
+                                restitution: 0.2,  // Low bounce for static objects
+                                friction: 0.8,  // High friction
                                 shape: physicsShape
                             });
-                            console.log(`[Legozo] Enabled physics on: ${mesh.name} (${objConfig.type})`);
+
+                            // CRITICAL: Ensure checkCollisions stays enabled for camera collision
+                            // Physics bodies can override this, so we explicitly set it again
+                            mesh.checkCollisions = true;
+
+                            console.log(`[Legozo] Enabled physics on: ${mesh.name} (${objConfig.type}, STATIC)`);
                         } catch (error) {
                             console.warn(`[Legozo] Failed to enable physics on ${mesh.name}:`, error);
                         }
