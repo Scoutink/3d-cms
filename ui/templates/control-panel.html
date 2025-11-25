@@ -16,6 +16,19 @@
 
     <!-- [GRD] Ground Rotation -->
     <h3>🌍 Ground Rotation</h3>
+
+    <!-- Rotate Full Scene Option -->
+    <div class="control-group" style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+        <label style="display: flex; align-items: center; cursor: pointer;">
+            <input type="checkbox" id="rotateFullScene" checked data-action="ground:rotate:fullscene"
+                   style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+            <span style="color: #81C784;">🔄 Rotate Full Scene (Recommended)</span>
+        </label>
+        <p style="margin: 8px 0 0 24px; font-size: 11px; color: #999; line-height: 1.4;">
+            When enabled, rotates entire scene including sky and lighting. Prevents flickering.
+        </p>
+    </div>
+
     <div class="control-group">
         <label>Quick Presets</label>
         <button data-action="ground:preset:horizontal">➡️ Horizontal</button>

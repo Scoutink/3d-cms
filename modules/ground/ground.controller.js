@@ -32,6 +32,9 @@ export class GroundController extends UIControllerBase {
             'ground:preset:vertical': (e, data) => this.handlePreset('vertical'),
             'ground:preset:diagonal45': (e, data) => this.handlePreset('diagonal45'),
 
+            // Full scene rotation toggle
+            'ground:rotate:fullscene': (e, data) => this.handleFullSceneToggle(e.target.checked),
+
             // Custom rotation (sliders)
             'ground:rotate:x': (e, data) => this.handleCustomRotation('x', data.value),
             'ground:rotate:y': (e, data) => this.handleCustomRotation('y', data.value),
@@ -116,6 +119,20 @@ export class GroundController extends UIControllerBase {
 
         // Update slider display
         this.updateElement(`#rotation${axis.toUpperCase()}Value`, `${degrees}°`);
+    }
+
+    /**
+     * Handle full scene rotation toggle
+     * @param {boolean} checked - Whether to rotate full scene
+     */
+    handleFullSceneToggle(checked) {
+        console.log(`[GroundController] Full scene rotation: ${checked ? 'enabled' : 'disabled'}`);
+
+        const plugin = this.module.getPlugin();
+        if (plugin) {
+            plugin.rotateFullScene = checked;
+            this.showSuccess(checked ? 'Full scene rotation enabled' : 'Ground-only rotation enabled');
+        }
     }
 
     /**

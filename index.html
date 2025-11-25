@@ -43,20 +43,95 @@
 
         // Global UI handlers (temporary until fully modularized)
         function setupGlobalHandlers(legozo) {
+            const engine = legozo.engine;
+
+            // Welcome/Demo
             window.startDemo = () => {
                 document.getElementById('welcomeMessage')?.classList.add('hidden');
             };
 
+            // Mode Toggle
             window.toggleMode = () => {
-                console.log('[Legozo] Toggle mode (TODO: implement)');
+                const btn = document.getElementById('modeToggleBtn');
+                const controlPanel = document.querySelector('.control-panel');
+                const propertiesPanel = document.querySelector('.properties-panel');
+
+                // Toggle mode in engine/plugins
+                const currentMode = engine.scene.metadata?.mode || 'edit';
+                const newMode = currentMode === 'edit' ? 'view' : 'edit';
+
+                if (engine.scene.metadata) {
+                    engine.scene.metadata.mode = newMode;
+                } else {
+                    engine.scene.metadata = { mode: newMode };
+                }
+
+                // Update UI
+                if (newMode === 'view') {
+                    controlPanel?.classList.add('hidden');
+                    propertiesPanel?.classList.add('hidden');
+                    if (btn) btn.innerHTML = '✏️ Switch to Edit Mode (Tab)';
+                } else {
+                    controlPanel?.classList.remove('hidden');
+                    propertiesPanel?.classList.remove('hidden');
+                    if (btn) btn.innerHTML = '👁️ Switch to View Mode (Tab)';
+                }
+
+                console.log(`[Legozo] Mode switched to: ${newMode}`);
             };
 
+            // Instructions Toggle
             window.toggleInstructions = () => {
                 const instructions = document.getElementById('instructions');
                 const btn = document.getElementById('toggleBtn');
                 if (instructions) {
                     instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
                     btn?.classList.toggle('visible');
+                }
+            };
+
+            // Ground Texture
+            window.setGroundTexture = (texture) => {
+                const groundPlugin = engine.plugins.get('ground');
+                if (groundPlugin && groundPlugin.setTexture) {
+                    groundPlugin.setTexture(texture);
+                    console.log(`[Legozo] Ground texture set to: ${texture}`);
+                }
+            };
+
+            // Texture Tiling
+            window.updateTextureTiling = (value) => {
+                const groundPlugin = engine.plugins.get('ground');
+                if (groundPlugin && groundPlugin.setTextureTiling) {
+                    groundPlugin.setTextureTiling(parseFloat(value));
+                    document.getElementById('textureTiling').textContent = `${value}x`;
+                }
+            };
+
+            // Sky Presets
+            window.setSkyPreset = (preset) => {
+                const skyPlugin = engine.plugins.get('sky');
+                if (skyPlugin && skyPlugin.usePreset) {
+                    skyPlugin.usePreset(preset);
+                    console.log(`[Legozo] Sky preset: ${preset}`);
+                }
+            };
+
+            // Lighting Presets
+            window.setLightingPreset = (preset) => {
+                const lightingPlugin = engine.plugins.get('lighting');
+                if (lightingPlugin && lightingPlugin.usePreset) {
+                    lightingPlugin.usePreset(preset);
+                    console.log(`[Legozo] Lighting preset: ${preset}`);
+                }
+            };
+
+            // Shadow Quality
+            window.setShadowQuality = (quality) => {
+                const shadowPlugin = engine.plugins.get('shadow');
+                if (shadowPlugin && shadowPlugin.setQuality) {
+                    shadowPlugin.setQuality(quality);
+                    console.log(`[Legozo] Shadow quality: ${quality}`);
                 }
             };
         }
