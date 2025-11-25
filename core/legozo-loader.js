@@ -445,19 +445,19 @@ export class LegozoLoader {
                 if (interactionPlugin) {
                     // Make mesh hoverable (highlight on hover)
                     interactionPlugin.makeHoverable(mesh, {
-                        onEnter: () => {
+                        onHoverEnter: () => {
                             console.log(`[Legozo] Hovering over: ${mesh.name}`);
                         },
-                        onExit: () => {
+                        onHoverExit: () => {
                             console.log(`[Legozo] Hover exit: ${mesh.name}`);
                         }
                     });
 
-                    // Make mesh clickable (show properties on click)
-                    interactionPlugin.makeClickable(mesh, () => {
-                        console.log(`[Legozo] Clicked: ${mesh.name}`);
+                    // Register click handler (show properties on click)
+                    interactionPlugin.onClick(mesh, (clickedMesh, event) => {
+                        console.log(`[Legozo] Clicked: ${clickedMesh.name}`);
                         if (propertiesPlugin && propertiesPlugin.showProperties) {
-                            propertiesPlugin.showProperties(mesh);
+                            propertiesPlugin.showProperties(clickedMesh);
                         }
                     });
 
