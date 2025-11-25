@@ -1,0 +1,123 @@
+<!-- 
+  Properties Panel Template
+  Shows selected object properties (position, rotation, scale, material)
+  Extracted from phase3-full-demo.html
+-->
+<div class="properties-panel" id="propertiesPanel">
+    <div class="properties-header">
+        <h3>📋 Properties</h3>
+    </div>
+    <div class="properties-body">
+        <!-- Object Name -->
+        <input type="text"
+               class="object-name-input"
+               id="propObjectName"
+               placeholder="Object Name"
+               disabled>
+
+        <!-- Position -->
+        <div class="property-section">
+            <div class="property-section-title">Position</div>
+            <div class="property-row">
+                <div class="property-input-group">
+                    <span class="property-label">X</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propPosX"
+                           step="0.1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Y</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propPosY"
+                           step="0.1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Z</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propPosZ"
+                           step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation -->
+        <div class="property-section">
+            <div class="property-section-title">Rotation</div>
+            <div class="property-row">
+                <div class="property-input-group">
+                    <span class="property-label">X</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propRotX"
+                           step="1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Y</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propRotY"
+                           step="1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Z</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propRotZ"
+                           step="1">
+                </div>
+            </div>
+            <div class="property-hint">Values in degrees</div>
+        </div>
+
+        <!-- Scale -->
+        <div class="property-section">
+            <div class="property-section-title">Scale</div>
+            <div class="property-row">
+                <div class="property-input-group">
+                    <span class="property-label">X</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propScaleX"
+                           step="0.1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Y</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propScaleY"
+                           step="0.1">
+                </div>
+                <div class="property-input-group">
+                    <span class="property-label">Z</span>
+                    <input type="number"
+                           class="property-input"
+                           id="propScaleZ"
+                           step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <!-- [FIX #9] Material Gallery - now in Properties Panel -->
+        <div class="property-section">
+            <div class="property-section-title">🎨 Material</div>
+            <div class="properties-material-grid">
+                <button onclick="applyMaterial('wood')">🪵 Wood</button>
+                <button onclick="applyMaterial('metal')">⚙️ Metal</button>
+                <button onclick="applyMaterial('gold')">🥇 Gold</button>
+                <button onclick="applyMaterial('silver')">⚪ Silver</button>
+                <button onclick="applyMaterial('copper')">🟠 Copper</button>
+                <button onclick="applyMaterial('glass')">💎 Glass</button>
+                <button onclick="applyMaterial('plastic')">🔵 Plastic</button>
+                <button onclick="applyMaterial('plasticRed')">🔴 Red Plastic</button>
+                <button onclick="applyMaterial('stone')">🪨 Stone</button>
+                <button onclick="applyMaterial('rubber')">⚫ Rubber</button>
+                <button onclick="applyMaterial('fabric')">🧵 Fabric</button>
+                <button onclick="applyMaterial('ceramic')">⚪ Ceramic</button>
+            </div>
+        </div>
+    </div>
+</div>
+

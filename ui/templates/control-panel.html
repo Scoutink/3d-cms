@@ -1,0 +1,161 @@
+<!-- 
+  Control Panel Template
+  Edit mode controls for ground, camera, lighting, shadows, sky, materials, objects
+  Extracted from phase3-full-demo.html
+-->
+<div class="control-panel">
+    <h2>⚙️ Edit Controls</h2>
+
+    <!-- [HINT] Usage Instructions -->
+    <div class="control-group" style="background: rgba(76, 175, 80, 0.1); padding: 12px; border-radius: 6px; border-left: 3px solid #4CAF50;">
+        <p style="margin: 0; font-size: 12px; color: #81C784; line-height: 1.6;">
+            💡 <strong>Tip:</strong> Click any object to see its properties panel on the left.
+            Use the colored arrows to move/rotate objects.
+        </p>
+    </div>
+
+    <!-- [GRD] Ground Rotation -->
+    <h3>🌍 Ground Rotation</h3>
+    <div class="control-group">
+        <label>Quick Presets</label>
+        <button onclick="setGroundRotationPreset('horizontal')">➡️ Horizontal</button>
+        <button onclick="setGroundRotationPreset('vertical')">⬆️ Vertical</button>
+        <button onclick="setGroundRotationPreset('diagonal45')">↗️ Diagonal 45°</button>
+    </div>
+
+    <div class="control-group">
+        <div class="slider-container">
+            <div class="slider-label">
+                <label>X-Axis Tilt</label>
+                <span class="value-display" id="rotX">0°</span>
+            </div>
+            <input type="range" id="rotXSlider" min="-180" max="180" value="0"
+                   oninput="updateGroundRotation()">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <label>Z-Axis Tilt</label>
+                <span class="value-display" id="rotZ">0°</span>
+            </div>
+            <input type="range" id="rotZSlider" min="-180" max="180" value="0"
+                   oninput="updateGroundRotation()">
+        </div>
+    </div>
+
+    <!-- [GRD] Ground Textures -->
+    <h3>🎨 Ground Textures</h3>
+    <div class="control-group">
+        <label>Texture Presets</label>
+        <div class="material-grid">
+            <button onclick="setGroundTexture('grass')">🌿 Grass</button>
+            <button onclick="setGroundTexture('dirt')">🟤 Dirt</button>
+            <button onclick="setGroundTexture('stone')">🪨 Stone</button>
+            <button onclick="setGroundTexture('sand')">🏖️ Sand</button>
+            <button onclick="setGroundTexture('concrete')">⬜ Concrete</button>
+            <button onclick="setGroundTexture('wood')">🪵 Wood</button>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="slider-container">
+            <div class="slider-label">
+                <label>Texture Tiling</label>
+                <span class="value-display" id="textureTiling">10x</span>
+            </div>
+            <input type="range" id="textureTilingSlider" min="1" max="20" value="10"
+                   oninput="updateTextureTiling(this.value)">
+        </div>
+    </div>
+
+    <!-- [GRD] Ground Edge Behavior -->
+    <h3>🚧 Ground Edge Behavior</h3>
+    <div class="control-group">
+        <button onclick="setEdgeBehavior('stop')">🛑 Stop at Edge</button>
+        <button onclick="setEdgeBehavior('teleport')">🔄 Teleport to Start</button>
+    </div>
+
+    <!-- [IGR] Infinite Terrain -->
+    <h3>♾️ Infinite Terrain</h3>
+    <div class="control-group">
+        <label>Terrain Mode</label>
+        <button onclick="toggleInfiniteTerrain()" id="terrainModeBtn">🌍 Enable Infinite Terrain</button>
+    </div>
+
+    <div class="control-group" id="infiniteTerrainControls" style="display: none;">
+        <div class="slider-container">
+            <div class="slider-label">
+                <label>View Distance</label>
+                <span class="value-display" id="viewDistance">3 chunks</span>
+            </div>
+            <input type="range" id="viewDistanceSlider" min="1" max="5" value="3"
+                   oninput="updateViewDistance(this.value)">
+        </div>
+
+        <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" id="heightVariationCheck" onchange="toggleHeightVariation(this.checked)"
+                       style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;">
+                <span>🏔️ Enable Height Variation (Hills)</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- [SKY] Sky System -->
+    <h3>🌤️ Sky & Environment</h3>
+    <div class="control-group">
+        <label>Sky Presets</label>
+        <button onclick="setSkyPreset('day')">☀️ Clear Day</button>
+        <button onclick="setSkyPreset('sunset')">🌅 Sunset</button>
+        <button onclick="setSkyPreset('night')">🌙 Night</button>
+        <button onclick="setSkyPreset('cloudy')">☁️ Cloudy</button>
+        <button onclick="setSkyPreset('space')">🌌 Space</button>
+    </div>
+
+    <!-- [LGT] Lighting -->
+    <h3>💡 Lighting Presets</h3>
+    <div class="control-group">
+        <button onclick="setLightingPreset('day')">☀️ Day</button>
+        <button onclick="setLightingPreset('night')">🌙 Night</button>
+        <button onclick="setLightingPreset('sunset')">🌅 Sunset</button>
+        <button onclick="setLightingPreset('indoor')">🏠 Indoor</button>
+        <button onclick="setLightingPreset('dramatic')">🎭 Dramatic</button>
+        <button onclick="setLightingPreset('studio')">🎬 Studio</button>
+    </div>
+
+    <!-- [SHD] Shadows -->
+    <h3>🌑 Shadow System</h3>
+    <div class="control-group">
+        <label>Quality Level</label>
+        <button onclick="setShadowQuality('low')">⚡ Low</button>
+        <button onclick="setShadowQuality('medium')">⚖️ Medium</button>
+        <button onclick="setShadowQuality('high')">💎 High</button>
+        <button onclick="setShadowQuality('ultra')">🔮 Ultra</button>
+    </div>
+
+    <!-- [MAT] Materials -->
+    <!-- [FIX #9] Material Gallery moved to Properties Panel -->
+</div>
+
+<!-- Instructions -->
+<div class="instructions" id="instructions">
+    <h3>📋 Controls</h3>
+    <ul>
+        <li><strong>WASD/Arrows:</strong> Move camera</li>
+        <li><strong>Mouse Drag:</strong> Rotate camera</li>
+        <li><strong>Tab:</strong> Toggle Edit/View Mode</li>
+        <li><strong>Hover:</strong> Objects highlight</li>
+        <li><strong>Click:</strong> Select object</li>
+        <li><strong>Drag:</strong> Move objects</li>
+        <li><strong>Ctrl+Click:</strong> Multi-select</li>
+        <li><strong>Right-click:</strong> Context menu</li>
+    </ul>
+    <p style="margin-top: 10px; font-size: 11px; color: #999; line-height: 1.4;">
+        <strong>Edit Mode:</strong> Full control panel visible<br>
+        <strong>View Mode:</strong> Clean viewing experience
+    </p>
+</div>
+
+<!-- Toggle button -->
+<button class="toggle-instructions" id="toggleBtn" onclick="toggleInstructions()">ℹ️</button>
+

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legozo 3D CMS</title>
+</head>
+<body>
+    <!-- Canvas for 3D rendering -->
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Babylon.js CDN -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+
+    <!-- Bootstrap Module Loader -->
+    <script type="module">
+        import { LegozoLoader } from './core/legozo-loader.js';
+
+        // Error handlers
+        window.addEventListener('error', (e) => console.error('[Legozo] Error:', e.error));
+        window.addEventListener('unhandledrejection', (e) => console.error('[Legozo] Unhandled rejection:', e.reason));
+
+        // Bootstrap function
+        async function bootstrap() {
+            try {
+                const legozo = new LegozoLoader();
+                window.legozo = legozo; // Global reference
+
+                await legozo.init('./config/scene-demo.json');
+                await legozo.start();
+
+                // Temporary global handlers for inline onclick in templates
+                setupGlobalHandlers(legozo);
+
+            } catch (error) {
+                console.error('[Legozo] Bootstrap failed:', error);
+                showError(error);
+            }
+        }
+
+        // Global UI handlers (temporary until fully modularized)
+        function setupGlobalHandlers(legozo) {
+            window.startDemo = () => {
+                document.getElementById('welcomeMessage')?.classList.add('hidden');
+            };
+
+            window.toggleMode = () => {
+                console.log('[Legozo] Toggle mode (TODO: implement)');
+            };
+
+            window.toggleInstructions = () => {
+                const instructions = document.getElementById('instructions');
+                const btn = document.getElementById('toggleBtn');
+                if (instructions) {
+                    instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+                    btn?.classList.toggle('visible');
+                }
+            };
+        }
+
+        // Show error UI
+        function showError(error) {
+            document.body.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                     background: rgba(255,0,0,0.9); color: white; padding: 30px; border-radius: 10px;
+                     font-family: monospace; max-width: 600px;">
+                    <h2>❌ Failed to Initialize</h2>
+                    <p>${error.message}</p>
+                    <pre style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; overflow: auto;">
+${error.stack}</pre>
+                    <button onclick="location.reload()" style="background: white; color: #c00; border: none;
+                         padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px;">
+                        Reload Page
+                    </button>
+                </div>
+            `;
+        }
+
+        // Auto-start
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootstrap);
+        } else {
+            bootstrap();
+        }
+    </script>
+</body>
+</html>
