@@ -165,4 +165,52 @@ body.view-mode .properties-panel {
     margin-top: 4px;
     font-style: italic;
 }
-    </style>
+
+/* Property increment/decrement buttons */
+.prop-increment,
+.prop-decrement {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #999;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.prop-increment:hover,
+.prop-decrement:hover {
+    background: rgba(76, 175, 80, 0.3);
+    color: #81C784;
+}
+
+.prop-increment:active,
+.prop-decrement:active {
+    background: rgba(76, 175, 80, 0.5);
+    transform: scale(0.95);
+}
+
+.prop-decrement {
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prop-increment {
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure input field stays between buttons */
+.property-input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.property-input-group .property-input {
+    text-align: center;
+}

@@ -116,7 +116,52 @@ class PropertiesPlugin extends Plugin {
         if (this.inputs.scaleY) this.inputs.scaleY.addEventListener('change', () => this.onInputChange('scale', 'y'));
         if (this.inputs.scaleZ) this.inputs.scaleZ.addEventListener('change', () => this.onInputChange('scale', 'z'));
 
+        // Setup increment/decrement button handlers
+        this.setupIncrementButtons();
+
         console.log('[PROPS.2] Input elements cached');
+    }
+
+    // [PROPS.2.1] Setup increment/decrement button handlers
+    setupIncrementButtons() {
+        const incrementButtons = this.panelElement.querySelectorAll('.prop-increment');
+        const decrementButtons = this.panelElement.querySelectorAll('.prop-decrement');
+
+        // Increment buttons
+        incrementButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const inputId = button.getAttribute('data-input');
+                const step = parseFloat(button.getAttribute('data-step')) || 0.1;
+                const input = document.getElementById(inputId);
+
+                if (input) {
+                    const currentValue = parseFloat(input.value) || 0;
+                    input.value = (currentValue + step).toFixed(step < 1 ? 2 : 0);
+                    // Trigger change event
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        // Decrement buttons
+        decrementButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const inputId = button.getAttribute('data-input');
+                const step = parseFloat(button.getAttribute('data-step')) || 0.1;
+                const input = document.getElementById(inputId);
+
+                if (input) {
+                    const currentValue = parseFloat(input.value) || 0;
+                    input.value = (currentValue - step).toFixed(step < 1 ? 2 : 0);
+                    // Trigger change event
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        console.log('[PROPS.2.1] Increment/decrement buttons setup complete');
     }
 
     // [PROPS.3] Setup event listeners
